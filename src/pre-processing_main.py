@@ -11,99 +11,15 @@ import seaborn as sns
 import json
 import argparse
 from multiprocessing import Pool, cpu_count
+import parse_gt
+from stderr import printerr
 
 # --------- functions ----------
-def stderr(output_to_print, *args, **kargs):
-	print('[pre-processing]', output_to_print, file = sys.stderr, *args, **kargs)
-
-def print_progress(progress_index, length):
-	progress_index += 1
-	stderr(str(round(100*((progress_index)/length), 3)) + '%' + '\r', end="")
-
-	if progress_index == length:
-		stderr('\ndone')
-
-	return progress_index
 
 def json_load(path):
 	with open(path, 'r') as f:
 		json_object = json.load(f)
 	return json_object
-
-def vcf_rec_to_var_uid(rec):
-	uid = rec.CHROM + ':' + str(rec.POS) + '_' + rec.REF + '/' + str(rec.ALT[0])
-	return uid
-
-def gt_string_to_int(gt):
-	if gt is not None and gt is not '.':
-		gt_split = gt.split('/')
-		gt_sum = int(gt_split[0]) + int(gt_split[1])
-		return gt_sum
-	else:
-		return None
-
-def parse_vcf_to_array(vcf_file_path):
-	stderr('parsing ' + vcf_file_path + '...')
-	if os.path.isfile(vcf_file_path):
-		index_length = int(subprocess.getoutput(' '.join(['grep','-v','^#',vcf_file_path,'|','wc','-l'])).split()[0])
-		progress_index = 0
-
-		vcf_list = []
-		with open(vcf_file_path, 'r') as inp:
-			reader = vcf.VCFReader(inp)
-
-			samples = reader.samples
-			vcf_list.append(['variant_name'] + samples)
-
-			for record in reader:
-				variant_name = [vcf_rec_to_var_uid(record)]
-				genotypes = []
-				for s in range(len(samples)):
-					gt = gt_string_to_int(record.genotype(samples[s]).data[0])
-					genotypes.append(gt)
-				line = variant_name + genotypes
-
-				vcf_list.append(line)
-				progress_index = print_progress(progress_index, index_length)
-			
-			vcf_array = np.array(vcf_list)
-			vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])
-	else:
-		sys.exit('vcf file not found!')
-	return vcf_df
-
-def parse_split_vcf_to_array(chr_vcfs_dir_path, files_regex):
-	stderr('parsing chromosome vcf files from ' + chr_vcfs_dir_path + '...')
-	vcf_files = list(filter(re.compile(files_regex).match, os.listdir(chr_vcfs_dir_path)))
-
-	vcf_list = []
-	for vcf_file in vcf_files:
-		
-		stderr('parsing ' + vcf_file + '...')
-		vcf_file_path = os.path.join(chr_vcfs_dir_path, vcf_file)
-		index_length = int(subprocess.getoutput(' '.join(['grep','-v','^#',vcf_file_path,'|','wc','-l'])).split()[0])
-
-		progress_index = 0
-		with open(vcf_file_path, 'r') as inp:
-			reader = vcf.VCFReader(inp)
-
-			samples = reader.samples
-			vcf_list.append(['variant_name'] + samples)
-
-			for record in reader:
-				variant_name = [vcf_rec_to_var_uid(record)]
-				genotypes = []
-				for s in range(len(samples)):
-					gt = gt_string_to_int(record.genotype(samples[s]).data[0])
-					genotypes.append(gt)
-				line = variant_name + genotypes
-
-				vcf_list.append(line)
-				progress_index = print_progress(progress_index, index_length)
-		
-		vcf_array = np.array(vcf_list)
-		vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])
-	return vcf_df
 
 def get_qnames_and_alleles(variant_name):
 	pos_ref_frags_dic = {}
@@ -198,11 +114,11 @@ error_rate_cfdna_vcf = os.path.join(project_dir, sample_id + '_cfdna_error_posit
 # --------- main ----------
 # parse vcf files
 # parents
-parents_gt = parse_split_vcf_to_array(project_dir, '.*parents.*chr.*vcf')
+parents_gt = parse_gt.parse_split(project_dir, '.*parents.*chr.*vcf')
 parents_gt = parents_gt.drop([var for var in parents_gt.index.values if var.startswith('chrY')], axis=0)
 parents_gt = parents_gt.dropna()
 # maternal plasma
-cfdna_gt = parse_split_vcf_to_array(fb_by_chrom_dir, '.*cfdna.*chr.*vcf')
+cfdna_gt = parse_gt.parse_split(fb_by_chrom_dir, '.*cfdna.*chr.*vcf')
 cfdna_gt = cfdna_gt.drop([var for var in cfdna_gt.index.values if var.startswith('chrY')], axis=0)
 cfdna_gt = cfdna_gt.dropna()
 # intersect to get positions of interest. this shouldn't drop to many positions, since variant calling was done by same coordinates.
