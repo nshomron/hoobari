@@ -1,0 +1,52 @@
+-- VERSION_4
+-- START DISKCACHE_2
+/home/tom/nshomron_tomr/projects/cffdna/scripts/hoobari/.metadata/.plugins/org.eclipse.core.resources/.projects/hoobari/com.python.pydev.analysis/v2_indexcache
+hoobari_main|1498135436000000000|/home/tom/nshomron_tomr/projects/cffdna/scripts/hoobari/hoobari/hoobari_main.py
+.install|1488837813000000000|/home/tom/anaconda3/pkgs/.install.py
+-- END DISKCACHE
+-- START DICTIONARY
+2
+2=hoobari_main
+1=.install
+-- END DICTIONARY
+-- START TREE 1
+35
+_li|1|_link!10@
+bam|1|bam_files_dir!19@
+bin|1|binary_replace!10@
+c_e|1|C_ENVS!11@
+cal|1|calculate_prior_probabilities!18@
+cfd|2|cfdna_vcf_file!19@cfdna_gt!19@
+cre|1|create_meta!10@
+cvs|1|cvs_vcf_file!19@
+dup|1|duplicates_to_remove!10@
+exp|1|exp_backoff_fn!10@
+for|1|FORCE!11@
+gt_|1|gt_string_to_int!18@
+idi|1|IDISTS!11@
+lin|7|link_name_map!11@LINK_SOFT!11@LINK_COPY!11@LINK_HARD!11@link!10@linked!10@link_idists!10@
+mai|2|main2!10@main!10@
+nam|1|name_dist!10@
+on_|1|on_win!11@
+pad|1|PaddingError!9@
+par|5|parents_gt!19@parents_df_pkl!19@parse_qnames_at_positions!18@parents_vcf_file!19@parse_vcf_to_array!18@
+pkg|1|PKGS_DIR!11@
+pos|1|post_extract!10@
+pre|2|prefix_placeholder!11@prefix_env!10@
+pri|1|print_progress!18@
+pro|1|project_dir!19@
+rea|3|read_has_prefix!10@read_urls!10@read_no_link!10@
+rem|1|remove_duplicates!10@
+rm_|1|rm_rf!10@
+roo|1|ROOT_PREFIX!11@
+run|1|run_script!10@
+sam|1|sample_id!19@
+ski|1|SKIP_SCRIPTS!11@
+upd|1|update_prefix!10@
+url|1|url_pat!11@
+vcf|1|vcf_rec_to_var_uid!18@
+yie|1|yield_lines!10@
+-- END TREE
+-- START TREE 2
+0
+-- END TREE
