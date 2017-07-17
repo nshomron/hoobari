@@ -182,7 +182,11 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	posteriors = np.divide(exp_var_priors_likelihoods, sum_exp_var_priors_likelihoods)
 	posteriors = posteriors.astype(np.float128)
 
-	if use_decimal:
+	# 2017-07-17: note that here there should be another condition:
+	# if the max posterior shows fetal gt of 0, then phred = -10*log(P(gt is 1) + P(gt is 2)) = -10log(1 - P(gt is 0))
+	# if the max posterior shows fetal gt of either 1 or 2, then phred = -10*log(1 - (P(gt is 1) + P(gt is 2))) = -10log(P(gt is 0))
+
+	if use_decimal: 
 		phred = float(-10*(1 - posteriors_array.max()).log10())
 	else:
 		phred = float(-10*(np.log10(1 - np.max(posteriors_array))))
