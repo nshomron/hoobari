@@ -19,7 +19,7 @@ from stderr import printerr
 import vcfuid
 
 # --------- functions ----------
-def calculate_priors(paternal_gt, maternal_gt):
+def calculate_priors(maternal_gt, paternal_gt):
 
 	'''
 	Calculate prior probabilities for each of the 3 possible fetal genotypes (1/1, 0/1 and 0/0), given the parents genotypes.
@@ -154,7 +154,7 @@ def calculate_likelihoods(
 # 	return posteriors
 
 
-def calculate_posterior_probabilities(variant, var_priors, var_likelihoods):
+def calculate_posterior(variant, var_priors, var_likelihoods):
 	# sum priors and likelihoods
 	var_priors_likelihoods = np.sum((var_priors, var_likelihoods), axis = 0)
 	

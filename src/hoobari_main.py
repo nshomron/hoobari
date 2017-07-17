@@ -1,78 +1,64 @@
 # --------- import modules ------------
+# external
 import re
 import os
 import sys
 import subprocess
 import requests
-import vcf
+import vcf, vcf.utils
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import json
-import pickle
+from json_commands import *
 import argparse
+# project's
+import parse_gt
+from stderr import printerr
+import vcfuid
+import pprogress
+import position
+
+# --------- parse args ---------
+parser = argparse.ArgumentParser()
+
+parser.add_argument("-s", "--sample_id", help = '')
+parser.add_argument("-parents", "--parents_vcf", help = 'The maternal plasma cfDNA VCF file')
+parser.add_argument("-cfdna", "--cfdna_vcf", help = 'The maternal plasma cfDNA VCF file')
+parser.add_argument("-tmp", "--tmp_dir", default = os.path.join(os.getcwd(), 'tmp_hb'), help = 'Directory for temporary files')
+parser.add_argument("-no_pkls", "--no_pkls", action = 'store_true', help = "don't make or use pickle files, usually after loading large objects")
+parser.add_argument("-v", "--vcf_output", default = 'stdout', help = 'path for vcf output')
+
+args = parser.parse_args()
+
+printerr(args)
 
 # --------- functions ----------
-def make_pkls(pkl_dir):
-	# create pkl dir
-	os.makedirs(pkl_dir, exist_ok=True)
-	# create pkl paths
-	pkls_dic = {	
-				'parents_gt_pkl': os.path.join(pkl_dir, sample_id + '_parents_gt.pkl'),
-				'cfdna_gt_pkl': os.path.join(pkl_dir, sample_id + '_cfdna_gt.pkl'),
-				'true_fetal_gt_pkl': os.path.join(pkl_dir, sample_id + '_true_fetal_gt.pkl'),
-				'cfdna_length_and_qnames_pkl': os.path.join(pkl_dir, 'M' + sample_id + '_plasma_with_qnames.pkl'),
-				'shared_fragments_dic_pkl': os.path.join(pkl_dir, 'M' + sample_id + '_plasma_shared_fragments_dic.pkl'),
-				'fetal_fragments_dic_pkl': os.path.join(pkl_dir, 'M' + sample_id + '_plasma_fetal_fragments_dic.pkl'),
-				'mother_ref_father_het_fetal_dic_pkl': os.path.join(pkl_dir, sample_id + '_mother_ref_father_het_fetal_dic.pkl'),
-				'mother_alt_father_het_fetal_dic_pkl': os.path.join(pkl_dir, sample_id + '_mother_alt_father_het_fetal_dic.pkl'),
-				'known_fetal_fragments_dic_pkl': os.path.join(pkl_dir, sample_id + '_known_fetal_fragments_dic.pkl'),
-				'cfdna_priors_df_pkl': os.path.join(pkl_dir, sample_id + '_cfdna_priors_df.pkl'),
-				'error_rate_pkl': os.path.join(pkl_dir, sample_id + '_error_rate.pkl'),
-				'cfdna_likelihoods_df_pkl': os.path.join(pkl_dir, sample_id + '_cfdna_likelihoods_df.pkl'),
-				'cfdna_likelihoods_wl_df_pkl': os.path.join(pkl_dir, sample_id + '_cfdna_likelihoods_wl_df.pkl'),
-				'cfdna_likelihoods_wlo_df_pkl': os.path.join(pkl_dir, sample_id + '_cfdna_likelihoods_wlo_df.pkl'),
-				'cfdna_posteriors_df_pkl': os.path.join(pkl_dir, sample_id + '_cfdna_posteriors_df.pkl'),
-				'cfdna_posteriors_wl_df_pkl': os.path.join(pkl_dir, sample_id + '_cfdna_posteriors_wl_df.pkl'),
-				'cfdna_posteriors_wlo_df_pkl': os.path.join(pkl_dir, sample_id + '_cfdna_posteriors_wlo_df.pkl')
-				}
 
-	return pkls_dic
+#temp
+err_rate = 0.0003
 
-def stderr(output_to_print, *args, **kargs):
-	print(output_to_print, file = sys.stderr, *args, **kargs)
+readers = [vcf.Reader(open(cfdna_vcf_path, 'rb')), vcf.Reader(open(parents_vcf_path, 'rb'))]
+cfdna_id = readers[0].samples[0]
+mother_id = 'M12148W'
+father_id = 'H12148W'
+reader = vcf.utils.walk_together(readers)
 
-def pkl_load(file_path):
-	stderr('found a pkl file, loading it...')
-	with open(file_path, 'rb') as pkl:
-		structure = pickle.load(pkl)
-	stderr('done')
-	return structure
+for tup in reader:
+	cfdna_rec, parents_rec = tup
+	variant_name = vcfuid.rec_to_uid(cfdna_rec)
+	
+	# calculate priors
+	maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data[0])
+	paternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data[0])
+	priors = position.calculate_priors(maternal_gt, paternal_gt)
 
-def pkl_save(obj, file_path):
-	with open(file_path, 'wb') as pkl:
-		pickle.dump(obj, pkl)
+	# calculate likelihoods
+	likelihoods = position.calculate_likelihoods(variant, args.tmp_dir,	total_fetal_fraction, fetal_fractions_df, err_rate,	lengths = False, origin = False)
 
-def print_progress(progress_index, length):
-	progress_index += 1
-	stderr(str(round(100*((progress_index)/length), 3)) + '%' + '\r', end="")
 
-	if progress_index == length:
-		stderr('\ndone')
 
-	return progress_index
 
-def vcf_rec_to_var_uid(rec):
-	uid = rec.CHROM + ':' + str(rec.POS) + '_' + rec.REF + '/' + str(rec.ALT[0])
-	return uid
 
-def gt_string_to_int(gt):
-	if gt is not None and gt is not '.':
-		gt_split = gt.split('/')
-		gt_sum = int(gt_split[0]) + int(gt_split[1])
-		return gt_sum
-	else:
-		return None
+
 
 def parse_vcf_to_array(vcf_file_path, pkl_file_path):
 	stderr('parsing ' + vcf_file_path + '...')
@@ -559,19 +545,7 @@ def make_vcf_df(posteriors_df, sample_id, vcf_output_path):
 	vcf_df.to_csv(vcf_handle, sep = '\t', index = False, doublequote=False)
 	vcf_handle.close()
 
-# --------- parse args ---------
-parser = argparse.ArgumentParser()
 
-parser.add_argument("-s", "--sample_id", help = '')
-parser.add_argument("-parents", "--parents_vcf", help = 'The maternal plasma cfDNA VCF file')
-parser.add_argument("-cfdna", "--cfdna_vcf", help = 'The maternal plasma cfDNA VCF file')
-parser.add_argument("-tmp", "--tmp_dir", default = os.path.join(os.getcwd(), 'tmp_hb'), help = 'Directory for temporary files')
-parser.add_argument("-no_pkls", "--no_pkls", action = 'store_true', help = "don't make or use pickle files, usually after loading large objects")
-parser.add_argument("-v", "--vcf_output", default = 'stdout', help = 'path for vcf output')
-
-args = parser.parse_args()
-
-###print the command with all arguments
 
 
 # --------- constants ----------
