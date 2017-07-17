@@ -154,7 +154,7 @@ def calculate_likelihoods(
 # 	return posteriors
 
 
-def calculate_posterior(variant, var_priors, var_likelihoods):
+def calculate_posteriors(variant, var_priors, var_likelihoods):
 	# sum priors and likelihoods
 	var_priors_likelihoods = np.sum((var_priors, var_likelihoods), axis = 0)
 	
