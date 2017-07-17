@@ -1,25 +1,21 @@
 # --------- import modules ------------
+# external
 import re
 import os
 import sys
 import subprocess
-import requests
 import vcf
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import json
+from json_commands import *
 import argparse
 from multiprocessing import Pool, cpu_count
+# project's
 import parse_gt
 from stderr import printerr
 
 # --------- functions ----------
-
-def json_load(path):
-	with open(path, 'r') as f:
-		json_object = json.load(f)
-	return json_object
 
 def get_qnames_and_alleles(variant_name):
 	pos_ref_frags_dic = {}
