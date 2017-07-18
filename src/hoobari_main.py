@@ -34,62 +34,52 @@ printerr(args)
 
 # --------- functions ----------
 
-
-
-
-
-
-
-
-def parse_vcf_to_array(vcf_file_path, pkl_file_path):
-	stderr('parsing ' + vcf_file_path + '...')
-	if os.path.isfile(pkl_file_path):
-		vcf_df = pkl_load(pkl_file_path)
-	else:
-		if os.path.isfile(vcf_file_path):
-			index_length = int(subprocess.getoutput(' '.join(['grep','-v','^#',vcf_file_path,'|','wc','-l'])).split()[0])
-			progress_index = 0
-
-			vcf_list = []
-			with open(vcf_file_path, 'r') as inp:
-				reader = vcf.VCFReader(inp)
-
-				samples = reader.samples
-				vcf_list.append(['variant_name'] + samples)
-
-				for record in reader:
-					variant_name = [vcf_rec_to_var_uid(record)]
-					genotypes = []
-					for s in range(len(samples)):
-						gt = gt_string_to_int(record.genotype(samples[s]).data[0])
-						genotypes.append(gt)
-					line = variant_name + genotypes
-
-					vcf_list.append(line)
-					progress_index = print_progress(progress_index, index_length)
-				
-				vcf_array = np.array(vcf_list)
-				vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])
-			pkl_save(vcf_df, pkl_file_path)
-		else:
-			sys.exit('vcf file not found!')
-	return vcf_df
-
-
-print_var(variant_row, *args, **kargs):
-	if args.vcf_output is not None:
-		print(variant_row, file = open(args.vcf_output, 'w'), *args, **kargs)
-	else:
-		print(variant_row, *args, **kargs)
-
-def make_vcf_header(fetal_sample_name, vcf_output_path):
+class fetal_vcf():
 	
+	class header():
+
+		def info_or_format(field_id, number, field_type, description, source=False):
+			line_list = []
+			line_list.append('##INFO=<ID=' + field_id)
+			line_list.append('Number=' + number) # int, A, R, G, '.'
+			line_list.append('Type=' + field_type)
+			if source != False:
+				line_list.append('Source="' + source + '"')
+			line_list.append('Description="' + description + '">')
+
+			return ','.join(line_list)
+	
+	def print_to_vcf(x, *args, **kargs):
+		if args.vcf_output is not None:
+			print(x, file = open(args.vcf_output, 'w'), *args, **kargs)
+		else:
+			print(x, *args, **kargs)
+
+
+def make_vcf_header(cfdna_vcf_reader, parents_vcf_reader, fetal_sample_name, vcf_output_path):
+	
+
+	##fileformat=VCFv4.2
+	##phasing=none
+
+	if parents_vcf_reader.contigs == cfdna_vcf_reader.contigs:
+		for f in parents_vcf_reader.contigs:
+
+
+	for f in parents_vcf_reader.formats:
+		write_fetal_vcf.header.info_or_format(	parents_vcf_reader.formats[f].id,
+												parents_vcf_reader.formats[f].num,
+												parents_vcf_reader.formats[f].type,
+												parents_vcf_reader.formats[f].desc,
+												'parental vcf file')
+
+
+
 	vcf_columns = ['#CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT'] + [fetal_sample_name]
 
-def write_var_to_vcf(vcf_output_path):
 
-	posteriors_df['gt'] = posteriors_df.ix[:,0:3].idxmax(axis=1)
-	posteriors_df['phred'] = np.where(posteriors_df['gt'] == 0, (-10) * np.log10(1 - posteriors_df[0]), (-10) * np.log10(posteriors_df[0]))
+
+def write_var_to_vcf(variant_name, prediction, phred, pos_info_dic, format_and_gt_dic, vcf_output_path):
 
 	vcf_list = []
 	for row in posteriors_df.itertuples():
@@ -98,30 +88,25 @@ def write_var_to_vcf(vcf_output_path):
 		variant_name = row[0]
 		
 		# columns 1 - 5
-		var_split = re.split(r':|_|/', variant_name)
-		row_list += var_split[0:2] + ['.'] + var_split[2:4]
+		chrom, pos, ref, alt = parse_gt.uid_to_rec(variant_name)
+		row_list += [chrom, pos, '.', ref, alt]
 		
 		# column 6-7
-		row_list += [str('phred')] + ['.']
+		row_list += [str(phred), '.']
 
 		# column 8
-		info_list = []
-		info_list.append('MATINFO_FORMAT=' + '.')
-		info_list.append('MAT_INFO=' + '.')
-		info_list.append('PAT_FORMAT=' + '.')
-		info_list.append('PAT_INFO=' + '.')
-		info_list.append('POSTERIORS=' + (','.join(str(p) for p in list(posteriors))))
+		info_list = sorted([str(k) + '=' + str(info_dic[k]) for k in info_dic])
 		row_list += [';'.join(info_list)]
 
 		# columns 9-10
 		format_list = []
 		fetal_gt_list = []
 		
-			# GT:DP:AD:RO:QR:AO:QA:GL
-
 		format_list.append('GT')
-		fetal_gt_list.append(gt_int_to_string(posteriors_df.ix[variant_name, 'gt']))
+		fetal_gt_list.append(parse_gt.int_to_str(prediction))
 		
+		
+
 		row_list += [':'.join(format_list)]
 		row_list += [':'.join(fetal_gt_list)]
 
@@ -142,13 +127,14 @@ def write_var_to_vcf(vcf_output_path):
 #temp
 err_rate = 0.0003
 
-readers = [vcf.Reader(open(args.cfdna_vcf, 'rb')), vcf.Reader(open(args.parents_vcf, 'rb'))]
-cfdna_id = readers[0].samples[0]
+cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
+parents_reader = vcf.Reader(filename = args.parents_vcf)
+cfdna_id = cfdna_reader.samples[0]
 mother_id = args.maternal_sample_name
 father_id = args.paternal_sample_name
-reader = vcf.utils.walk_together(readers)
+co_reader = vcf.utils.walk_together(cfdna_reader, parents_reader)
 
-for tup in reader:
+for tup in co_reader:
 	cfdna_rec, parents_rec = tup
 	variant_name = vcfuid.rec_to_uid(cfdna_rec)
 	
@@ -161,5 +147,20 @@ for tup in reader:
 	likelihoods = position.calculate_likelihoods(variant, args.tmp_dir,	total_fetal_fraction, fetal_fractions_df, err_rate,	lengths = False, origin = False)
 
 	# calculate posteriors
-	posteriors, phred = position.calculate_posteriors(priors, likelihoods)
+	posteriors, prediction, phred = position.calculate_posteriors(priors, likelihoods)
 
+	info_dic = {'MATINFO_FORMAT': a,
+				'MAT_INFO': B,
+				'PAT_FORMAT': C,
+				'PAT_INFO': D}
+
+	gl = (','.join(str(p) for p in list(posteriors)))
+
+	format_and_gt_dic = {	'GT': gt,
+							'DP': dp,
+							'AD': ad,
+							'RO': ro,
+							'QR': qr,
+							'AO': ao,
+							'QA': qa,
+							'GL': gl}

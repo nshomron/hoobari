@@ -16,6 +16,17 @@ def str_to_int(gt):
 	else:
 		return None
 
+def int_to_str(gt):
+	if gt == 0:
+		string = '0/0'
+	elif gt == 1:
+		string = '0/1'
+	elif gt == 2:
+		string = '1/1'
+	else:
+		string = '.'
+	return string
+
 def parse(vcf_file_path):
 	printerr('parsing ' + vcf_file_path + '...')
 	if os.path.isfile(vcf_file_path):

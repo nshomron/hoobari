@@ -141,45 +141,32 @@ def calculate_likelihoods(
 	
 	return sum_log_fragments_likelihoods_df
 
-# def calculate_posterior_probabilities(variant, priors, likelihoods):
-# 	var_priors = np.asarray(calculate_priors(), dtype = np.float128)
-# 	var_likelihoods = np.asarray(likelihoods_df.loc[variant], dtype = np.float128)
-# 	var_priors_likelihoods = var_priors + var_likelihoods
-# 	var_priors_likelihoods_c = var_priors_likelihoods - np.min(var_priors_likelihoods[~np.isnan(var_priors_likelihoods)])
-# 	exp_var_priors_likelihoods = np.exp(var_priors_likelihoods_c)
-# 	exp_var_priors_likelihoods[np.isnan(exp_var_priors_likelihoods)] = 0
-# 	sum_exp_var_priors_likelihoods = exp_var_priors_likelihoods.sum()
-# 	posteriors = np.asarray((exp_var_priors_likelihoods / sum_exp_var_priors_likelihoods), dtype = np.float128)
-
-# 	return posteriors
-
-
 def calculate_posteriors(var_priors, var_likelihoods):
 	# sum priors and likelihoods
-	var_priors_likelihoods = np.sum((var_priors, var_likelihoods), axis = 0)
+	joint_probabilities = np.sum((var_priors, var_likelihoods), axis = 0)
 	
 	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
-	prediction = np.idxmax(var_priors_likelihoods[~np.isnan(var_priors_likelihoods)])
+	prediction = np.idxmax(joint_probabilities[~np.isnan(joint_probabilities)])
 
 	# calculate probabilities for the output vcf and for plotting success rates per maximum posterior threshold
-	var_priors_likelihoods_c = var_priors_likelihoods - np.min(var_priors_likelihoods[~np.isnan(var_priors_likelihoods)])
-	exp_var_priors_likelihoods = np.exp(var_priors_likelihoods_c)
-	if any(exp_var_priors_likelihoods[np.isinf(exp_var_priors_likelihoods)]):
+	joint_probabilities_c = joint_probabilities - np.min(joint_probabilities[~np.isnan(joint_probabilities)])
+	exp_joint_probabilities = np.exp(joint_probabilities_c)
+	if any(exp_joint_probabilities[np.isinf(exp_joint_probabilities)]):
 		use_decimal = True
-		exp_var_priors_likelihoods_list = []
-		for d in var_priors_likelihoods_c:
+		exp_joint_probabilities_list = []
+		for d in joint_probabilities_c:
 			if np.isnan(d):
-				exp_var_priors_likelihoods_list.append(Decimal(0))
+				exp_joint_probabilities_list.append(Decimal(0))
 			else:
-				exp_var_priors_likelihoods_list.append(Decimal(d).exp())
-		exp_var_priors_likelihoods = np.array(exp_var_priors_likelihoods_list)
+				exp_joint_probabilities_list.append(Decimal(d).exp())
+		exp_joint_probabilities = np.array(exp_joint_probabilities_list)
 	else:		
 		use_decimal = False
-		exp_var_priors_likelihoods[np.isnan(exp_var_priors_likelihoods)] = 0
+		exp_joint_probabilities[np.isnan(exp_joint_probabilities)] = 0
 	
 
-	sum_exp_var_priors_likelihoods = exp_var_priors_likelihoods.sum()
-	posteriors = np.divide(exp_var_priors_likelihoods, sum_exp_var_priors_likelihoods)
+	sum_exp_joint_probabilities = exp_joint_probabilities.sum()
+	posteriors = np.divide(exp_joint_probabilities, sum_exp_joint_probabilities)
 	posteriors = posteriors.astype(np.float128)
 
 	# 2017-07-17: note that here there should be another condition:
@@ -191,4 +178,4 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	else:
 		phred = float(-10*(np.log10(1 - np.max(posteriors_array))))
 			
-	return (posteriors_array, phred)
+	return (posteriors_array, prediction, phred)
