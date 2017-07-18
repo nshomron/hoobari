@@ -146,7 +146,7 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),
 	# take only likelihoods
-	if var_priors is not None:
+	if var_priors:
 		joint_probabilities = np.sum((var_priors, var_likelihoods), axis = 0)
 	else:
 		joint_probabilities = var_likelihoods
@@ -154,6 +154,8 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
 	prediction = np.idxmax(joint_probabilities[~np.isnan(joint_probabilities)])
 
+
+	# -------- maybe this as new function? (make_phred or something) -----------
 	# calculate probabilities for the output vcf and for plotting success rates per maximum posterior threshold
 	joint_probabilities_c = joint_probabilities - np.min(joint_probabilities[~np.isnan(joint_probabilities)])
 	exp_joint_probabilities = np.exp(joint_probabilities_c)
@@ -183,5 +185,7 @@ def calculate_posteriors(var_priors, var_likelihoods):
 		phred = float(-10*(1 - posteriors.max()).log10())
 	else:
 		phred = float(-10*(np.log10(1 - np.max(posteriors))))
-			
+	
+	# ------------------------------------------------------------------------------
+
 	return (joint_probabilities, prediction, phred)
