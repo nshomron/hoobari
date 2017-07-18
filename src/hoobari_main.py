@@ -159,10 +159,13 @@ for tup in co_reader:
 	joint_probabilities, prediction, phred = position.calculate_posteriors(priors, likelihoods)
 
 	# parental information for INFO field
-	info_dic = OrderedDict([('MATINFO_FORMAT', a),
-							('MAT_INFO', B),
-							('PAT_FORMAT', C),
-							('PAT_INFO', D)])
+	parents_format = parents_reader.FORMAT
+	matinfo = ':'.join(str(i) for i in rec_sample_to_string(parents_rec, mother_id).values())
+	patinfo = ':'.join(str(i) for i in rec_sample_to_string(parents_rec, father_id).values())
+	info_dic = OrderedDict([('MATINFO_FORMAT', parents_format),
+							('MAT_INFO', matinfo),
+							('PATINFO_FORMAT', parents_format),
+							('PAT_INFO', patinfo)])
 
 	# fetal information for the sample and FORMAT fields
 	cfdna_geno_sample_dic = rec_sample_to_string(cfdna_rec, cfdna_id)
