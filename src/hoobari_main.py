@@ -158,11 +158,26 @@ def write_var_to_vcf(variant_name, prediction, phred, pos_info_dic, format_and_g
 
 #temp
 err_rate = 0.0003
-info_dic = OrderedDict([('MATINFO_FORMAT', {'num': '.', 'type': 'String', 'desc': '"Format of maternal sample ganotyping information"', 'source': '"parental vcf"'}),
-			('MAT_INFO', {'num': '.', 'type': 'String', 'desc': '"Maternal sample ganotyping information"', 'source': '"parental vcf"'}),
-			('PATINFO_FORMAT', {'num': '.', 'type': 'String', 'desc': '"Format of paternal sample ganotyping information"', 'source': '"parental vcf"'}),
-			('PAT_INFO', {'num': '.', 'type': 'String', 'desc': '"Paternal sample ganotyping information"', 'source': '"parental vcf"'}),
-			('PARENTS_QUAL', {'num': '.', 'type': 'Float', 'desc': '"Parental samples QUAL score"', 'source': '"parental vcf"'})])
+info_dic = OrderedDict([('MATINFO_FORMAT', {	'num': '.',
+						'type': 'String',
+						'desc': '"Format of maternal sample ganotyping information"',
+						'source': '"parental vcf"'}),
+			('MAT_INFO', {		'num': '.',
+						'type': 'String',
+						'desc': '"Maternal sample ganotyping information"',
+						'source': '"parental vcf"'}),
+			('PATINFO_FORMAT', {	'num': '.',
+						'type': 'String',
+						'desc': '"Format of paternal sample ganotyping information"',
+						'source': '"parental vcf"'}),
+			('PAT_INFO', {		'num': '.',
+						'type': 'String',
+						'desc': '"Paternal sample ganotyping information"',
+						'source': '"parental vcf"'}),
+			('PARENTS_QUAL', {	'num': '.',
+						'type': 'Float',
+						'desc': '"Parental samples QUAL score"',
+						'source': '"parental vcf"'})])
 
 reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GL')
 
