@@ -154,7 +154,7 @@ for tup in co_reader:
 				'PAT_FORMAT': C,
 				'PAT_INFO': D}
 
-	gl = (','.join(str(p) for p in list(posteriors)))
+	gj = (','.join(str(p) for p in list(posteriors)))
 
 	format_and_gt_dic = {	'GT': gt,
 							'DP': dp,
@@ -163,4 +163,4 @@ for tup in co_reader:
 							'QR': qr,
 							'AO': ao,
 							'QA': qa,
-							'GL': gl}
+							'GJ': gj}

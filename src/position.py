@@ -142,9 +142,15 @@ def calculate_likelihoods(
 	return sum_log_fragments_likelihoods_df
 
 def calculate_posteriors(var_priors, var_likelihoods):
-	# sum priors and likelihoods
-	joint_probabilities = np.sum((var_priors, var_likelihoods), axis = 0)
 	
+	# sum priors and likelihoods
+	# if there are no priors (for instance if parental genotypes at positions are missing),
+	# take only likelihoods
+	if var_priors is not None:
+		joint_probabilities = np.sum((var_priors, var_likelihoods), axis = 0)
+	else:
+		joint_probabilities = var_likelihoods
+
 	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
 	prediction = np.idxmax(joint_probabilities[~np.isnan(joint_probabilities)])
 
@@ -174,8 +180,8 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# if the max posterior shows fetal gt of either 1 or 2, then phred = -10*log(1 - (P(gt is 1) + P(gt is 2))) = -10log(P(gt is 0))
 
 	if use_decimal: 
-		phred = float(-10*(1 - posteriors_array.max()).log10())
+		phred = float(-10*(1 - posteriors.max()).log10())
 	else:
-		phred = float(-10*(np.log10(1 - np.max(posteriors_array))))
+		phred = float(-10*(np.log10(1 - np.max(posteriors))))
 			
-	return (posteriors_array, prediction, phred)
+	return (joint_probabilities, prediction, phred)
