@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from json_commands import *
 import argparse
+from collections import OrderedDict
 # project's
 import parse_gt
 from stderr import printerr
@@ -49,9 +50,9 @@ class fetal_vcf():
 
 			return ','.join(line_list)
 	
-	def print_to_vcf(x, *args, **kargs):
-		if args.vcf_output is not None:
-			print(x, file = open(args.vcf_output, 'w'), *args, **kargs)
+	def print_to_vcf(x, out_path = args.vcf_output, *args, **kargs):
+		if out_path is not None:
+			print(x, file = open(out_path, 'w'), *args, **kargs)
 		else:
 			print(x, *args, **kargs)
 
@@ -68,7 +69,7 @@ def make_vcf_header(cfdna_vcf_reader, parents_vcf_reader, fetal_sample_name, vcf
 
 	for f in parents_vcf_reader.formats:
 		write_fetal_vcf.header.info_or_format(	parents_vcf_reader.formats[f].id,
-												parents_vcf_reader.formats[f].num,
+												vcf.Writer.counts[vcf_num_parents_vcf_reader.formats[f].num],
 												parents_vcf_reader.formats[f].type,
 												parents_vcf_reader.formats[f].desc,
 												'parental vcf file')
@@ -79,7 +80,7 @@ def make_vcf_header(cfdna_vcf_reader, parents_vcf_reader, fetal_sample_name, vcf
 
 
 
-def write_var_to_vcf(variant_name, prediction, phred, pos_info_dic, format_and_gt_dic, vcf_output_path):
+def write_var_to_vcf(variant_name, prediction, phred, pos_info_dic, format_and_gt_dic):
 
 	vcf_list = []
 	for row in posteriors_df.itertuples():
@@ -95,33 +96,41 @@ def write_var_to_vcf(variant_name, prediction, phred, pos_info_dic, format_and_g
 		row_list += [str(phred), '.']
 
 		# column 8
-		info_list = sorted([str(k) + '=' + str(info_dic[k]) for k in info_dic])
+		info_list = [str(k) + '=' + str(info_dic[k]) for k in info_dic]
 		row_list += [';'.join(info_list)]
 
 		# columns 9-10
-		format_list = []
-		fetal_gt_list = []
+		format_list = list(format_and_gt_dic.keys())
+		fetal_gt_list = list(format_and_gt_dic.values())
+		row_list += [':'.join(format_list)] + [':'.join(fetal_gt_list)]
+
+		# merge all to one row string
+		variant_row = '\t'.join(row_list)
 		
-		format_list.append('GT')
-		fetal_gt_list.append(parse_gt.int_to_str(prediction))
-		
-		
+		print_to_vcf(variant_row)
 
-		row_list += [':'.join(format_list)]
-		row_list += [':'.join(fetal_gt_list)]
+def rec_sample_to_string(rec, sample):
+	data = rec.genotype(sample).data
+	
+	gt = str(data.GT)
+	dp = str(data.DP)
+	ad = ','.join(str(i) for i in data.AD)
+	ro = str(data.RO)
+	qr = str(data.QR)
+	ao = str(data.AO[0])
+	qa = str(data.QA[0])
+	gl = ','.join(str(i) for i in data.GL)
 
-		vcf_list.append(row_list)
-		
-		print_var(variant_row)
+	format_and_gt_dic = OrderedDict([	('GT', gt),
+										('DP', dp),
+										('AD', ad),
+										('RO', ro),
+										('QR', qr),
+										('AO', ao),
+										('QA', qa),
+										('GL', gl)])
 
-
-
-
-
-
-
-
-
+	return format_and_gt_dic
 
 
 #temp
@@ -139,28 +148,27 @@ for tup in co_reader:
 	variant_name = vcfuid.rec_to_uid(cfdna_rec)
 	
 	# calculate priors
-	maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data[0])
-	paternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data[0])
+	maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data.GT)
+	paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
 	priors = position.calculate_priors(maternal_gt, paternal_gt)
 
 	# calculate likelihoods
 	likelihoods = position.calculate_likelihoods(variant, args.tmp_dir,	total_fetal_fraction, fetal_fractions_df, err_rate,	lengths = False, origin = False)
 
 	# calculate posteriors
-	posteriors, prediction, phred = position.calculate_posteriors(priors, likelihoods)
+	joint_probabilities, prediction, phred = position.calculate_posteriors(priors, likelihoods)
 
-	info_dic = {'MATINFO_FORMAT': a,
-				'MAT_INFO': B,
-				'PAT_FORMAT': C,
-				'PAT_INFO': D}
+	# parental information for INFO field
+	info_dic = OrderedDict([('MATINFO_FORMAT', a),
+							('MAT_INFO', B),
+							('PAT_FORMAT', C),
+							('PAT_INFO', D)])
 
-	gj = (','.join(str(p) for p in list(posteriors)))
+	# fetal information for the sample and FORMAT fields
+	cfdna_geno_sample_dic = rec_sample_to_string(cfdna_rec, cfdna_id)
+	cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
+	cfdna_geno_sample_dic['GJ'] = (','.join(str(p) for p in list(joint_probabilities)))
+	del cfdna_geno_sample_dic['GL']
 
-	format_and_gt_dic = {	'GT': gt,
-							'DP': dp,
-							'AD': ad,
-							'RO': ro,
-							'QR': qr,
-							'AO': ao,
-							'QA': qa,
-							'GJ': gj}
+	# write var out (to file passed with -v or to output)
+	write_var_to_vcf(variant_name, prediction, phred, info_dic, cfdna_geno_sample_dic)
