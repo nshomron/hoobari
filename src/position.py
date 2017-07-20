@@ -99,9 +99,7 @@ def calculate_likelihoods(
 
 	if origin:
 		lengths = True
-
-	chrom, pos, ref, alt = vcfuid.uid_to_rec(variant)
-	chrom_pos = chrom + ':' + pos
+	chrom_pos = str(chrom) + ':' + str(pos)
 
 	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom + '_snps', chrom_pos + '.json')
 	pos_data = pd.DataFrame(json_load(snp_json_path))
