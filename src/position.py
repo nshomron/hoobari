@@ -60,7 +60,7 @@ def calculate_priors(maternal_gt, paternal_gt):
 
 	return (priors, priors_source)
 
-def calculate_fragment_i(fetal_genotypes, frag_genotype, ref, alt, f, err_rate):
+def calculate_fragment_i(frag_genotype, ref, alt, f, err_rate):
 	'''
 	probabilities of each fragment i to show the reference allele, given one of the 3 possible fetal genotypes.
 	P(frag_i | fetal_genotype) = P(frag_i | frag from fetus)P(frag from fetus | fetal_genotype) + P(frag_i | frag from mother)P(frag from mother | fetal_genotype)
@@ -96,10 +96,13 @@ def calculate_likelihoods(
 	the model, such as the maternal genotype, fragment length and the fetal genotype (which is unknown,
 	so we check for all possibilities - 1/1, 0/1 and 0/0)
 	'''
-
 	if origin:
 		lengths = True
+
+	chrom, pos, ref, alt = varuid.uid_to_rec(variant)
 	chrom_pos = str(chrom) + ':' + str(pos)
+
+	variant_len = len(ref) - len(alt)
 
 	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom + '_snps', chrom_pos + '.json')
 	pos_data = pd.DataFrame(json_load(snp_json_path))
@@ -129,7 +132,7 @@ def calculate_likelihoods(
 				ff = total_fetal_fraction
 
 
-			frag_i_likelihood_list = calculate_fragment_i(fetal_genotypes, frag_genotype, ref, alt, ff, err_rate)
+			frag_i_likelihood_list = calculate_fragment_i(frag_genotype, ref, alt, ff, err_rate)
 			if frag_i_likelihood_list is not None:
 				fragments_likelihoods_list.append(frag_i_likelihood_list)
 
