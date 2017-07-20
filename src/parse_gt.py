@@ -38,15 +38,20 @@ def parse(vcf_file_path):
 			reader = vcf.VCFReader(inp)
 
 			samples = reader.samples
-			vcf_list.append(['variant_name'] + samples)
+			vcf_list.append(['variant_name'] + samples + ['indel'])
 
 			for record in reader:
 				variant_name = [vcfuid.rec_to_uid(record)]
 				genotypes = []
 				for s in range(len(samples)):
-					gt = str_to_int(record.genotype(samples[s]).data[0])
+					gt = str_to_int(record.genotype(samples[s]).data.GT)
 					genotypes.append(gt)
-				line = variant_name + genotypes
+				
+				# flag: snp - 0 , indel - 1
+				if record.INFO['TYPE'][0] in ('ins', 'del'):
+					indel = 1
+
+				line = variant_name + genotypes + indel
 
 				vcf_list.append(line)
 				progress_index = pprogress.pprogress(progress_index, index_length)
