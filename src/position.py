@@ -28,7 +28,7 @@ def calculate_priors(maternal_gt, paternal_gt):
 	Father: If the father is 1/1 (2) the probability to inherit the alternate allele is 1. if he's 0/1 (1) it's 0.5,
 	and if he's 0/0 (0) it's 0. therefore it's always the (sum_of_alternate_alleles/2), which is marked is f.
 	P(fetus = 1/1) = p_inherit_alt_from_mother * p_inherit_alt_from_father = 0.5 * f
-	P(fetus = 0/1) = (p_inherit_alt_from_mother * p_inherit_ref_from_father) + (p_inherit_ref_from_mother * p_inherit_alt_from_father) = 
+	P(fetus = 0/1) = (p_inherit_alt_from_mother * p_inherit_ref_from_father) + (p_inherit_ref_from_mother * p_inherit_alt_from_father) =
 	0.5 * (1 - f) + 0.5 * f = 0.5 * (1 - f + f) = 0.5
 	P(fetus = 0/0) = p_inherit_ref_from_mother * p_inherit_ref_from_father = 0.5 * (1 - f)
 	==>
@@ -49,8 +49,8 @@ def calculate_priors(maternal_gt, paternal_gt):
 
 	priors = [	(1-p_maternal_alt)*(1-p_paternal_alt),
 				p_maternal_alt*(1-p_paternal_alt) + (1-p_maternal_alt)*p_paternal_alt,
-				p_maternal_alt*p_paternal_alt]			
-	
+				p_maternal_alt*p_paternal_alt]
+
 	for i in range(len(priors)):
 		if priors[i] == 0:
 			priors[i] = None
@@ -89,18 +89,18 @@ def calculate_likelihoods(
 	lengths = False,
 	origin = False,
 	**kwargs):
-	
+
 	'''
-	calculate likelihoods for each of the 3 possible fetal genotype, based on the prbability that 
-	fragment_i at the position, will show a certain allele (ref or alt), given other factors of 
+	calculate likelihoods for each of the 3 possible fetal genotype, based on the prbability that
+	fragment_i at the position, will show a certain allele (ref or alt), given other factors of
 	the model, such as the maternal genotype, fragment length and the fetal genotype (which is unknown,
 	so we check for all possibilities - 1/1, 0/1 and 0/0)
 	'''
 
 	if origin:
 		lengths = True
-	
-	str(chrom), str(pos), ref, alt = vcfuid.uid_to_rec(variant)
+
+	chrom, pos, ref, alt = vcfuid.uid_to_rec(variant)
 	chrom_pos = chrom + ':' + pos
 
 	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom + '_snps', chrom_pos + '.json')
@@ -117,7 +117,7 @@ def calculate_likelihoods(
 				frag_qname = row[3]
 				if frag_qname in known_fetal_qnames_dic:
 					ff = 0.7
-				else: 
+				else:
 					try:
 						ff = fetal_fractions_df[int(row[2])]
 					except:
@@ -134,27 +134,14 @@ def calculate_likelihoods(
 			frag_i_likelihood_list = calculate_fragment_i(fetal_genotypes, frag_genotype, ref, alt, ff, err_rate)
 			if frag_i_likelihood_list is not None:
 				fragments_likelihoods_list.append(frag_i_likelihood_list)
-		
+
 		fragments_likelihoods_df = np.array(fragments_likelihoods_list)
 		log_fragments_likelihoods_df = np.log(fragments_likelihoods_df)
 		sum_log_fragments_likelihoods_df = log_fragments_likelihoods_df.sum(axis = 0)
-	
+
 	return sum_log_fragments_likelihoods_df
 
-def calculate_posteriors(var_priors, var_likelihoods):
-	
-	# sum priors and likelihoods
-	# if there are no priors (for instance if parental genotypes at positions are missing),
-	# take only likelihoods
-	if var_priors:
-		joint_probabilities = np.sum((var_priors, var_likelihoods), axis = 0)
-	else:
-		joint_probabilities = var_likelihoods
-
-	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
-	prediction = np.idxmax(joint_probabilities[~np.isnan(joint_probabilities)])
-
-
+def calculate_phred(joint_probabilities)
 	# -------- maybe this as new function? (make_phred or something) -----------
 	# calculate probabilities for the output vcf and for plotting success rates per maximum posterior threshold
 	joint_probabilities_c = joint_probabilities - np.min(joint_probabilities[~np.isnan(joint_probabilities)])
@@ -168,10 +155,9 @@ def calculate_posteriors(var_priors, var_likelihoods):
 			else:
 				exp_joint_probabilities_list.append(Decimal(d).exp())
 		exp_joint_probabilities = np.array(exp_joint_probabilities_list)
-	else:		
+	else:
 		use_decimal = False
 		exp_joint_probabilities[np.isnan(exp_joint_probabilities)] = 0
-	
 
 	sum_exp_joint_probabilities = exp_joint_probabilities.sum()
 	posteriors = np.divide(exp_joint_probabilities, sum_exp_joint_probabilities)
@@ -181,11 +167,26 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# if the max posterior shows fetal gt of 0, then phred = -10*log(P(gt is 1) + P(gt is 2)) = -10log(1 - P(gt is 0))
 	# if the max posterior shows fetal gt of either 1 or 2, then phred = -10*log(1 - (P(gt is 1) + P(gt is 2))) = -10log(P(gt is 0))
 
-	if use_decimal: 
-		phred = float(-10*(1 - posteriors.max()).log10())
+	if use_decimal:
+		phred = float(-10*(np.log10(1 - posteriors.max())))
 	else:
 		phred = float(-10*(np.log10(1 - np.max(posteriors))))
-	
-	# ------------------------------------------------------------------------------
+
+def calculate_posteriors(var_priors, var_likelihoods):
+	 #Convert to numeric values just in case
+	var_priors, var_likelihoods=pd.to_numeric(var_priors),pd.to_numeric(var_likelihoods)
+
+	# sum priors and likelihoods
+	# if there are no priors (for instance if parental genotypes at positions are missing),
+	# take only likelihoods
+	if any(var_priors):
+		joint_probabilities = np.sum((var_priors, var_likelihoods), axis = 0)
+	else:
+		joint_probabilities = var_likelihoods
+
+	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
+	prediction = joint_probabilities[~np.isnan(joint_probabilities)].argmax()
+
+	phred=calculate_phred(joint_probabilities)
 
 	return (joint_probabilities, prediction, phred)
