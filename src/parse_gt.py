@@ -1,12 +1,14 @@
-from stderr import printerr
-import vcf
-import pandas as pd
-import re
+# import modules
+# external
 import os
-import subprocess
+import re
+import pandas as pd
+import numpy as np
+import vcf
+# project's
+from stderr import printerr
 import vcfuid
 import pprogress
-import numpy as np
 
 def str_to_int(gt):
 	if gt is not None and gt is not '.':

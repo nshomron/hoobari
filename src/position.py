@@ -142,7 +142,7 @@ def calculate_likelihoods(
 
 	return sum_log_fragments_likelihoods_df
 
-def calculate_phred(joint_probabilities)
+def calculate_phred(joint_probabilities):
 	# -------- maybe this as new function? (make_phred or something) -----------
 	# calculate probabilities for the output vcf and for plotting success rates per maximum posterior threshold
 	joint_probabilities_c = joint_probabilities - np.min(joint_probabilities[~np.isnan(joint_probabilities)])

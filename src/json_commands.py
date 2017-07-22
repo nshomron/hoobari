@@ -8,3 +8,7 @@ def json_load(path):
 		return json_object
 	else:
 		return None
+
+def json_dump(object, path):
+	with open(path, 'w') as f:
+		json.dump(object,f)
