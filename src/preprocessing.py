@@ -11,7 +11,7 @@ from multiprocessing import Pool, cpu_count
 from json_commands import *
 import parse_gt
 from stderr import printerr
-import varuid
+import vcfuid
 
 
 
@@ -21,7 +21,7 @@ def get_qnames_and_alleles(variant_name, tmp_dir):
 	pos_ref_frags_dic = {}
 	pos_alt_frags_dic = {}
 	
-	chrom, pos, ref, alt = varuid.uid_to_rec(variant_name)
+	chrom, pos, ref, alt = vcfuid.uid_to_rec(variant_name)
 
 	snp_json_path = path.join(tmp_dir, 'jsons', chrom + '_snps', str(pos) + '.json')
 	if path.isfile(snp_json_path):

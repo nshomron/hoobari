@@ -33,33 +33,35 @@ def parse(vcf_file_path):
 	printerr('parsing ' + vcf_file_path + '...')
 	if os.path.isfile(vcf_file_path):
 		index_length = pprogress.get_file_length(vcf_file_path)
+		printerr(index_length)
 		progress_index = pprogress.reset()
 
 		vcf_list = []
-		with open(vcf_file_path, 'r') as inp:
-			reader = vcf.VCFReader(inp)
+		reader = vcf.Reader(filename = vcf_file_path)
 
-			samples = reader.samples
-			vcf_list.append(['variant_name'] + samples + ['indel'])
+		samples = reader.samples
+		vcf_list.append(['variant_name'] + samples + ['indel'])
 
-			for record in reader:
-				variant_name = [vcfuid.rec_to_uid(record)]
-				genotypes = []
-				for s in range(len(samples)):
-					gt = str_to_int(record.genotype(samples[s]).data.GT)
-					genotypes.append(gt)
-				
-				# flag: snp - 0 , indel - 1
-				if record.INFO['TYPE'][0] in ('ins', 'del'):
-					indel = 1
-
-				line = variant_name + genotypes + indel
-
-				vcf_list.append(line)
-				progress_index = pprogress.pprogress(progress_index, index_length)
+		for record in reader:
+			variant_name = [vcfuid.rec_to_uid(record)]
+			genotypes = []
+			for s in range(len(samples)):
+				gt = str_to_int(record.genotype(samples[s]).data.GT)
+				genotypes.append(gt)
 			
-			vcf_array = np.array(vcf_list)
-			vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])
+			# flag: snp - 0 , indel - 1
+			if record.INFO['TYPE'][0] in ('ins', 'del'):
+				indel = 1
+			else:
+				indel = 0
+
+			line = variant_name + genotypes + indel
+
+			vcf_list.append(line)
+			progress_index = pprogress.pprogress(progress_index, index_length)
+		
+		vcf_array = np.array(vcf_list)
+		vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])
 	else:
 		sys.exit('vcf file not found!')
 	return vcf_df
@@ -76,22 +78,21 @@ def parse_split(chr_vcfs_dir_path, files_regex):
 		index_length = pprogress.get_file_length(vcf_file_path)
 		progress_index = pprogress.reset()
 
-		with open(vcf_file_path, 'r') as inp:
-			reader = vcf.VCFReader(inp)
+		reader = vcf.Reader(filename = vcf_file_path)
 
-			samples = reader.samples
-			vcf_list.append(['variant_name'] + samples)
+		samples = reader.samples
+		vcf_list.append(['variant_name'] + samples)
 
-			for record in reader:
-				variant_name = [vcfuid.rec_to_uid(record)]
-				genotypes = []
-				for s in range(len(samples)):
-					gt = str_to_int(record.genotype(samples[s]).data[0])
-					genotypes.append(gt)
-				line = variant_name + genotypes
+		for record in reader:
+			variant_name = [vcfuid.rec_to_uid(record)]
+			genotypes = []
+			for s in range(len(samples)):
+				gt = str_to_int(record.genotype(samples[s]).data[0])
+				genotypes.append(gt)
+			line = variant_name + genotypes
 
-				vcf_list.append(line)
-				progress_index = pprogress.pprogress(progress_index, index_length)
+			vcf_list.append(line)
+			progress_index = pprogress.pprogress(progress_index, index_length)
 		
 		vcf_array = np.array(vcf_list)
 		vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])

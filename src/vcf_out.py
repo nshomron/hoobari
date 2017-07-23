@@ -1,6 +1,9 @@
 from collections import OrderedDict
 import vcf
 import parse_gt
+import sys
+from time import strftime
+from stderr import printerr
 
 info_dic = OrderedDict([('MATINFO_FORMAT', {	'num': '.',
 						'type': 'String',
@@ -23,34 +26,42 @@ info_dic = OrderedDict([('MATINFO_FORMAT', {	'num': '.',
 						'desc': '"Parental samples QUAL score"',
 						'source': '"parental vcf"'})])
 
-reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GL')
+reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GJ')
 
+hoobari_formats_dic = OrderedDict([('GJ', {	'num': 'G',
+						'type': 'Float',
+						'desc': 'Genotype Joint probabilities, log scaled. This is the Bayesian numerator (likelihood*prior) for each possible genotype (0/0, 0/1, 1/1)',
+						'source': 'hoobari'})])
 
-def print_info_or_format_row(info_or_format, field_id, number, field_type, description, source=False):
+def print_info_or_format_row(info_or_format, field_id, number, field_type, description, source=False, output_path = False):
 	line_list = []
 	line_list.append('##' + info_or_format +'=<ID=' + field_id)
-	line_list.append('Number=' + number) # int, A, R, G, '.'
+	line_list.append('Number=' + str(number)) # int, A, R, G, '.'
 	line_list.append('Type=' + field_type)
 	if source:
 		line_list.append('Source="' + source + '"')
 	line_list.append('Description="' + description + '">')
 
-	return ','.join(line_list)
+	printvcf(','.join(line_list), out_path = output_path)
 	
-def printvcf(x, out_path = False, *args, **kargs):
+def printvcf(x, *args, out_path = False, **kargs):
 	if out_path:
 		with open(out_path, 'w') as f:
 			print(x, file = f, *args, **kargs)
 	else:
 		print(x, *args, **kargs)
 
-def make_header(cfdna_vcf_reader, parents_vcf_reader, fetal_sample_name, info_dic, reserved_formats, out_path = False):
+def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sample_name, info_dic, reserved_formats, output_path = False):
 	
 	if cfdna_vcf_reader.metadata['reference'] != parents_vcf_reader.metadata['reference']:
-		sys.exit('ERROR: the vcf files are not based on the same reference genome!')
+		printerr('ERROR: the vcf files are not based on the same reference genome!')
+		printerr('cfDNA:', str(cfdna_vcf_reader.metadata['reference']))
+		printerr('parental:', str(parents_vcf_reader.metadata['reference']))
 	if cfdna_vcf_reader.contigs != parents_vcf_reader.contigs:
 		printerr(	'Warning: cfdna and parental vcf files were aligned to same reference file \
 				but their contigs are different')
+		printerr('cfDNA:', str(cfdna_vcf_reader.contigs))
+		printerr('parental:', str(parents_vcf_reader.contigs))
 
 	# print unique header fields
 	printvcf(	'##fileFormat=' + cfdna_vcf_reader.metadata['fileformat'],
@@ -58,15 +69,16 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, fetal_sample_name, info_di
 			'##source=hoobari',
 			'##phasing=none', # phasing is not yet supported
 			'##reference=' + cfdna_vcf_reader.metadata['reference'],
-			'##commandline="' + ' '.join(sys.argv) + '"',
+			'##commandline="' + input_command,
 			sep = '\n',
-			out_path = False)
+			out_path = output_path)
 	
 	# print contigs header fields
 	cfdna_contigs_output = []
 	for c in cfdna_vcf_reader.contigs.values():
 		cfdna_contigs_output.append('##contig=<ID=' + str(c.id) + ',length=' + str(c.length) + '>')
-	printvcf('\n'.join(cfdna_contigs_output), out_path = False)
+	printvcf('\n'.join(cfdna_contigs_output), out_path = output_path)
+
 
 	# print info header fields
 	for k in info_dic:
@@ -75,26 +87,40 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, fetal_sample_name, info_di
 						info_dic[k]['num'],
 						info_dic[k]['type'],
 						info_dic[k]['desc'],
-						info_dic[k]['source'])
+						info_dic[k]['source'],
+						output_path = output_path)
 
 	# print format header fields
 	cfdna_infos_names = [i[0] for i in cfdna_vcf_reader.formats.values()]
 	for k in reserved_formats:
-		if (k == 'GT') or (k == 'GJ'):
-			k_source = 'hoobari'
-		else:
+		
+		k_class, k_id = 'FORMAT', k
+
+		if k in cfdna_infos_names:
+			
+			if cfdna_vcf_reader.formats[k].num in vcf.Writer.counts:
+				k_num = vcf.Writer.counts[cfdna_vcf_reader.formats[k].num]
+			else:
+				k_num = cfdna_vcf_reader.formats[k].num
+
+			k_type = str(cfdna_vcf_reader.formats['GT'].type)
+			k_desc = cfdna_vcf_reader.formats[k].desc
 			k_source = 'cfdna vcf file'
 
-		print_info_or_format_row(	'FORMAT',
-						cfdna_vcf_reader.formats[k].id,
-						vcf.Writer.counts[vcf_num_parents_vcf_reader.formats[k].num],
-						cfdna_vcf_reader.formats[k].type,
-						cfdna_vcf_reader.formats[k].desc,
-						k_source)
+			if k == 'GT':
+				k_source = 'hoobari'
+				
+		else:
+			k_num = hoobari_formats_dic[k]['num']
+			k_type = hoobari_formats_dic[k]['type']
+			k_desc = hoobari_formats_dic[k]['desc']
+			k_source = 'hoobari'
+		
+		print_info_or_format_row(k_class, k_id, k_num, k_type, k_desc, source = k_source, output_path = output_path)
 
 	# print column names
 	vcf_columns = ['#CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT'] + [fetal_sample_name]
-	printvcf('\t'.join(vcf_columns), out_path = out_path)
+	printvcf('\t'.join(vcf_columns), out_path = output_path)
 
 def rec_sample_to_string(rec, sample):
 	data = rec.genotype(sample).data
@@ -119,31 +145,26 @@ def rec_sample_to_string(rec, sample):
 
 	return format_and_gt_dic
 
-def print_var(variant_name, prediction, phred, pos_info_dic, format_and_gt_dic, out_path = False):
+def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 
-	vcf_list = []
-	for row in posteriors_df.itertuples():
+	row_list = []
 
-		row_list = []
-		variant_name = row[0]
-		
-		# columns 1 - 5
-		chrom, pos, ref, alt = parse_gt.uid_to_rec(variant_name)
-		row_list += [chrom, pos, '.', ref, alt]
-		
-		# column 6-7
-		row_list += [str(phred), '.']
+	# columns 1 - 5
+	row_list += [rec.CHROM, str(rec.POS), '.', rec.REF, str(rec.ALT[0])]
+	
+	# column 6-7
+	row_list += [str(phred), '.']
 
-		# column 8
-		info_list = [str(k) + '=' + str(info_dic[k]) for k in info_dic]
-		row_list += [';'.join(info_list)]
+	# column 8
+	info_list = [str(k) + '=' + str(pos_info_dic[k]) for k in pos_info_dic]
+	row_list += [';'.join(info_list)]
 
-		# columns 9-10
-		format_list = list(format_and_gt_dic.keys())
-		fetal_gt_list = list(format_and_gt_dic.values())
-		row_list += [':'.join(format_list)] + [':'.join(fetal_gt_list)]
+	# columns 9-10
+	format_list = list(format_and_gt_dic.keys())
+	fetal_gt_list = list(format_and_gt_dic.values())
+	row_list += [':'.join(format_list)] + [':'.join(fetal_gt_list)]
 
-		# merge all to one row string
-		variant_row = '\t'.join(row_list)
-		
-		printvcf(variant_row, out_path = out_path)
+	# merge all to one row string
+	variant_row = '\t'.join(row_list)
+	
+	printvcf(variant_row, out_path = out_path)

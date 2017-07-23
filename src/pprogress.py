@@ -16,7 +16,7 @@ def get_length(object):
 
 def pprogress(progress_index, length):
 	progress_index += 1
-	#printerr(str(round(100*((progress_index)/length), 3)) + '%' + '\r', end="")
+	printerr(str(round(100*((progress_index)/length), 3)) + '%' + '\r', end="")
 	
 	percents = list(range(0, length + 1, length//100))
 	

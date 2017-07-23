@@ -81,13 +81,13 @@ def calculate_fragment_i(frag_genotype, ref, alt, f, err_rate):
 		return frag_i_likelihoods
 
 def calculate_likelihoods(
-	variant,
+	cfdna_rec,
 	tmp_dir,
 	total_fetal_fraction,
 	fetal_fractions_df,
 	err_rate,
-	lengths = False,
-	origin = False,
+	known_fetal_qnames_dic,
+	model,
 	**kwargs):
 
 	'''
@@ -96,10 +96,8 @@ def calculate_likelihoods(
 	the model, such as the maternal genotype, fragment length and the fetal genotype (which is unknown,
 	so we check for all possibilities - 1/1, 0/1 and 0/0)
 	'''
-	if origin:
-		lengths = True
 
-	chrom, pos, ref, alt = varuid.uid_to_rec(variant)
+	chrom, pos, ref, alt = rec.CHROM, str(rec.POS), rec.REF, str(rec.ALT[0])
 	chrom_pos = str(chrom) + ':' + str(pos)
 
 	variant_len = len(ref) - len(alt)
@@ -114,18 +112,18 @@ def calculate_likelihoods(
 			frag_genotype = row[1]
 
 			# get fetal fraction depending on factors
-			if origin:
+			if model == 'origin':
 				frag_qname = row[3]
 				if frag_qname in known_fetal_qnames_dic:
 					ff = 0.7
 				else:
 					try:
-						ff = fetal_fractions_df[int(row[2])]
+						ff = fetal_fractions_df[int(row[2]) - variant_len]
 					except:
 						ff = total_fetal_fraction
-			elif lengths:
+			elif model == 'lengths':
 				try:
-					ff = fetal_fractions_df[int(row[2])]
+					ff = fetal_fractions_df[int(row[2]) - variant_len]
 				except:
 					ff = total_fetal_fraction
 			else:
@@ -174,7 +172,7 @@ def calculate_phred(joint_probabilities):
 		phred = float(-10*(np.log10(1 - np.max(posteriors))))
 
 def calculate_posteriors(var_priors, var_likelihoods):
-	 #Convert to numeric values just in case
+	# Convert to numeric values just in case
 	var_priors, var_likelihoods=pd.to_numeric(var_priors),pd.to_numeric(var_likelihoods)
 
 	# sum priors and likelihoods
@@ -188,6 +186,6 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
 	prediction = joint_probabilities[~np.isnan(joint_probabilities)].argmax()
 
-	phred=calculate_phred(joint_probabilities)
+	phred = calculate_phred(joint_probabilities)
 
 	return (joint_probabilities, prediction, phred)
