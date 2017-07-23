@@ -56,7 +56,7 @@ if not args.preprocessing_pkl_path:
 										max = 500,
 										plot_dir = False)
 
-	pkl_save([err_rate, parents_gt, total_fetal_fraction, known_fetal_frags_dic, fetal_fractions_df], args.tmp_dir)
+	pkl_save([err_rate, parents_gt, total_fetal_fraction, known_fetal_frags_dic, fetal_fractions_df], os.path.join(args.tmp_dir, 'pre_processing.pkl'))
 else:
 	err_rate, parents_gt, total_fetal_fraction, known_fetal_frags_dic, fetal_fractions_df = pkl_load(args.use_preprocessing_from_pkl)
 
