@@ -33,8 +33,8 @@ def parse(vcf_file_path):
 	printerr('parsing ' + vcf_file_path + '...')
 	if os.path.isfile(vcf_file_path):
 		index_length = pprogress.get_file_length(vcf_file_path)
-		printerr(index_length)
 		progress_index = pprogress.reset()
+		percents = pprogress.percents(index_length)
 
 		vcf_list = []
 		reader = vcf.Reader(filename = vcf_file_path)
@@ -55,10 +55,11 @@ def parse(vcf_file_path):
 			else:
 				indel = 0
 
-			line = variant_name + genotypes + indel
+			line = variant_name + genotypes + [indel]
 
 			vcf_list.append(line)
-			progress_index = pprogress.pprogress(progress_index, index_length)
+			
+			progress_index = pprogress.pprogress(progress_index, index_length, percents)
 		
 		vcf_array = np.array(vcf_list)
 		vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])
