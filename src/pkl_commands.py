@@ -1,10 +1,11 @@
 import pickle
+from stderr import printerr
 
 def pkl_load(file_path):
-	print('found a pkl file, loading it...', sep = '')
+	printerr('found a pkl file, loading it...')
 	with open(file_path, 'rb') as pkl:
 		structure = pickle.load(pkl)
-	print('done')
+	printerr('done')
 	return structure
 
 def pkl_save(obj, file_path):

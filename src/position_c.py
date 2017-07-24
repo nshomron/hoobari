@@ -34,11 +34,6 @@ def calculate_priors(maternal_gt, paternal_gt):
 	[0.5f, 0.5, 0.5(1-f)]
 	'''
 
-	if maternal_gt == '.':
-		maternal_gt = None
-	if paternal_gt == '.':
-		paternal_gt = None
-
 	if (maternal_gt in (0,1,2)) and (paternal_gt in (0,1,2)):
 		p_maternal_alt = maternal_gt / 2
 		p_paternal_alt = paternal_gt / 2
@@ -108,13 +103,6 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 	
 	return frag_i_likelihoods
 
-def get_fetal_fraction_per_length(tlen, ff_per_length_dataframe, variant_length, total_fetal_fraction):
-	try:
-		ff = fetal_fractions_df[int(row[2]) - variant_len]
-	except:
-		ff = total_fetal_fraction
-	return ff
-
 def calculate_likelihoods(
 	rec,
 	maternal_gt,
@@ -132,6 +120,7 @@ def calculate_likelihoods(
 	the model, such as the maternal genotype, fragment length and the fetal genotype (which is unknown,
 	so we check for all possibilities - 1/1, 0/1 and 0/0)
 	'''
+	sum_log_fragments_likelihoods_df = [None, None, None]
 
 	chrom, pos, ref, alt = rec.CHROM, str(rec.POS), rec.REF, str(rec.ALT[0])
 	
@@ -140,14 +129,12 @@ def calculate_likelihoods(
 	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom, pos + '.json')
 	pos_data = pd.DataFrame(json_load(snp_json_path))
 
-	sum_log_fragments_likelihoods_df = [None, None, None]
-
-	if pos_data is not None and maternal_gt:
+	if (pos_data is not None) and (maternal_gt in (0,1,2)):
 
 		fragments_likelihoods_list = []
 		for row in pos_data.itertuples():
 			frag_genotype = row[1]
-			frag_length = int(row[2]) - variant_len
+			frag_length = max(int(row[2]) - variant_len, 0)
 			frag_qname = row[3]
 			
 			# get fetal fraction
@@ -158,9 +145,11 @@ def calculate_likelihoods(
 			else:
 				ff = total_fetal_fraction
 
-
 			frag_i_likelihood_list = calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, ff, err_rate)
 			if frag_i_likelihood_list is not None:
+				for i in range(len(frag_i_likelihood_list)):
+					if frag_i_likelihood_list[i] == 0: # 0 would cause -inf after log, and the sum would also be -inf
+						frag_i_likelihood_list[i] = 0.3 # TODO: change this when error is inserted to the model
 				fragments_likelihoods_list.append(frag_i_likelihood_list)
 
 		if len(fragments_likelihoods_list) > 0:
@@ -173,11 +162,11 @@ def calculate_likelihoods(
 	return sum_log_fragments_likelihoods_df
 
 def calculate_phred(joint_probabilities):
-    libphred = np.ctypeslib.load_library('libphred.so','/groups/nshomron/tomr/projects/cffdna/hoobari/src/') #TODO - fix to relative path
-    libphred.calculatePhred.restype = ctypes.c_longdouble
-    cdubs = joint_probabilities.ctypes.data_as(ctypes.POINTER(ctypes.c_longdouble))
+	libphred = np.ctypeslib.load_library('libphred.so','/groups/nshomron/tomr/projects/cffdna/hoobari/src/') #TODO - fix to relative path
+	libphred.calculatePhred.restype = ctypes.c_longdouble
+	cdubs = joint_probabilities.ctypes.data_as(ctypes.POINTER(ctypes.c_longdouble))
 
-    return libphred.calculatePhred(cdubs)
+	return libphred.calculatePhred(cdubs)
 
 def get_prediction(joint_probabilities_nparray):
 	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
@@ -195,19 +184,20 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	joint_probabilities = np.add(var_priors, var_likelihoods)
 	probabilities_source = 'joint'
 	if not any(joint_probabilities[~np.isnan(joint_probabilities)]): # if there are only nans in the joint
-		if any(var_likelihoods):
+		if any(var_likelihoods[~np.isnan(var_likelihoods)]):
 			joint_probabilities = var_likelihoods
 			probabilities_source = 'likelihoods'
-		elif any(var_priors):
-			joint_probabilities = var_priors
-			probabilities_source = 'priors'
+		# elif any(var_priors[~np.isnan(var_priors)]):
+		# 	joint_probabilities = var_priors
+		# 	probabilities_source = 'priors'
 		else:
 			joint_probabilities = prediction = phred = None
 			probabilities_source = 'none'
+			
 
 	if joint_probabilities is not None:
 		prediction = get_prediction(joint_probabilities)
-		#phred = calculate_phred(joint_probabilities)
-		phred = 300
+		phred = calculate_phred(joint_probabilities)
+		#phred = 300
 
 	return (joint_probabilities, prediction, phred, probabilities_source)

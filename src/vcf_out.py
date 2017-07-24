@@ -125,21 +125,21 @@ def rec_sample_to_string(rec, sample):
 	data = rec.genotype(sample).data
 	#print(data)
 	
-	if data:
+	if data and data.GT != '.':
 		format_and_gt_dic = OrderedDict([])
 		format_list = rec.FORMAT.split(':')
 		for f in format_list:
 			idx = format_list.index(f)
 			if f in ('AD', 'GL'):
 				value = ','.join(str(i) for i in data[idx])
-			elif (type(f) is list) and len(f) == 1:
-				value = str(data[idx][0])
+			elif type(data[idx]) is list:
+				value = ','.join([str(i) for i in data[idx]])
 			else:
 				value = str(data[idx])
 			
 			format_and_gt_dic[f] = value
 	else: 
-		format_and_gt_dic = None
+		format_and_gt_dic = '.'
 		
 	return format_and_gt_dic
 
@@ -171,7 +171,7 @@ def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 	printvcf(variant_row, out_path = out_path)
 
 def unsupported_position(rec, out_path = False):
-		ariant_row = [	rec.CHROM,
+		variant_row = [	rec.CHROM,
 				str(rec.POS),
 				'.',
 				rec.REF,

@@ -113,27 +113,22 @@ for tup in co_reader:
 			
 			if joint_probabilities is not None:
 				# fetal information for the sample and FORMAT fields
-				if cfdna_rec.genotype(cfdna_id).data.GT != '.':
-					cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
+				cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
+				if cfdna_geno_sample_dic != '.':
 					cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
 					del cfdna_geno_sample_dic['GL']
 					cfdna_geno_sample_dic['GJ'] = (','.join(str(round(p,2)) for p in list(joint_probabilities)))
-				else:
-					cfdna_geno_sample_dic = '.'
-					probabilities_source = '.'
 
 
 				# parental information for INFO field
 				parents_format = parents_rec.FORMAT
-				matinfo = patinfo = '.'
-
-				# print (parents_rec)
-				# print(parents_rec.genotype(mother_id).data)
-				# print(parents_rec.genotype(father_id).data)
+				
 				if parents_rec.genotype(mother_id).data.GT != '.':
 					matinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values()])
 				if parents_rec.genotype(father_id).data.GT != '.':
 					patinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values()])
+				else:
+					matinfo = patinfo = '.'
 
 				rec_info_dic = OrderedDict([	('PARENTS_FORMAT', parents_format),
 								('MAT_INFO', matinfo),
