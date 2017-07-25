@@ -1,8 +1,8 @@
 import sqlite3
 
 
-class Variants(Object):
-    def __init__(self,dbname='hoobari.db'):
+class Variants(object):
+    def __init__(self,dbname='/groups/nshomron/guyshapira/projects/hoobari/src/hoobari.db'):
         # Connect to DB
         con=sqlite3.connect(dbname,isolation_level=None)
 
@@ -27,7 +27,7 @@ class Variants(Object):
         con.execute(query[:-1] + ');')
 
     # Insert variant to table
-    def insertVariant(pos,chromosome,genotype,qname)
+    def insertVariant(pos,chromosome,genotype,qname):
         con.execute('''
             INSERT INTO `variants`
             (`pos`,

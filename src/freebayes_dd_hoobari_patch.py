@@ -29,14 +29,12 @@ Explanation:
 3) the tmp_folder created here is the same one you should later use when you run hoobari
 '''
 
-
-os.makedirs(out_dir, exist_ok=True)
 chromosomes = ['chr' + str(i) for i in list(range(1,23)) + ['X']]
 
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 
 # Initiate variants database
-vardb=Variants()
+vardb=db.Variants()
 
 for line in stdin:
 
@@ -63,6 +61,5 @@ for line in stdin:
 		position_list.append([geno, math.fabs(isize), qname])
 
 	elif line.startswith('finished position'):
-		# json_dump(position_list, position_file_path)
-                vardb.insertVariants(position_list,chrom.replace('chr',''),int(position))
+		vardb.insertVariants(position_list,chrom.replace('chr',''),int(position))
 		initiate_json = True
