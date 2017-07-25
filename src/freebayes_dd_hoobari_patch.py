@@ -65,5 +65,4 @@ for line in stdin:
 	elif line.startswith('finished position'):
 		# json_dump(position_list, position_file_path)
                 vardb.insertVariants(position_list,chrom.replace('chr',''),int(position))
-                db.initVariants(i)
 		initiate_json = True
