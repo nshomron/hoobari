@@ -7,7 +7,7 @@ import os
 import math
 import pysam
 import argparse
-from json_commands import *
+import db
 
 # --------- parse args ---------
 parser = argparse.ArgumentParser()
@@ -30,20 +30,21 @@ Explanation:
 '''
 
 
-out_dir = os.path.join(args.tmp_dir, 'jsons')
 os.makedirs(out_dir, exist_ok=True)
 chromosomes = ['chr' + str(i) for i in list(range(1,23)) + ['X']]
-[os.makedirs(os.path.join(out_dir, c), exist_ok=True) for c in chromosomes]
 
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 
+# Initiate variants database
+vardb=Variants()
+
 for line in stdin:
-	
+
 	if line.startswith('position: '):
 		initiate_json = True
 		line = line.split()
 		var = line[1]
-				
+
 	elif line.startswith('haplo_obs'):
 		if initiate_json:
 			chrom, position = var.split(':')
@@ -51,8 +52,6 @@ for line in stdin:
 			template_lengths_at_position_dic = {}
 			for rec in bam_records_at_position:
 				template_lengths_at_position_dic[rec.query_name] = rec.template_length
-			
-			position_file_path = os.path.join(out_dir, chrom, position + '.json')
 			position_list = []
 			initiate_json = False
 
@@ -64,5 +63,7 @@ for line in stdin:
 		position_list.append([geno, math.fabs(isize), qname])
 
 	elif line.startswith('finished position'):
-		json_dump(position_list, position_file_path)
+		# json_dump(position_list, position_file_path)
+                vardb.insertVariants(position_list,chrom.replace('chr',''),int(position))
+                db.initVariants(i)
 		initiate_json = True
