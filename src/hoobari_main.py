@@ -17,7 +17,8 @@ import parse_gt
 from stderr import printerr
 import vcfuid
 import pprogress
-import position
+#import position
+import position_c as position
 import vcf_out
 import preprocessing
 
