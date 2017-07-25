@@ -38,13 +38,13 @@ def calculate_priors(maternal_gt, paternal_gt):
 		p_paternal_alt = paternal_gt / 2
 		priors_source = 'parents_vcf'
 	else: # get maf or af or ldaf
-		maf = retrieve_maf_from_ensembl(variant_name)
-		if maf[1] is not None:
-			p_maternal_alt = p_paternal_alt = maf[1]
-			priors_source = maf[0]
-		else:
-			priors = [None, None, None]
-			priors_source = '.'
+		# maf = retrieve_maf_from_ensembl(variant_name)
+		# if maf[1] is not None:
+		# 	p_maternal_alt = p_paternal_alt = maf[1]
+		# 	priors_source = maf[0]
+		# else:
+		priors = [None, None, None]
+		priors_source = '.'
 
 	priors = [	(1-p_maternal_alt)*(1-p_paternal_alt),
 				p_maternal_alt*(1-p_paternal_alt) + (1-p_maternal_alt)*p_paternal_alt,
@@ -71,22 +71,21 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 	'''
 
 	# fetal genotypes: 0,1,2
-
+	# print(frag_genotype)
 	if frag_genotype == alt:
 		p_maternal_alt = maternal_gt / 2
 		frag_i_likelihoods = [	0*f + p_maternal_alt*(1-f), # fetal is 0/0
 					0.5*f + p_maternal_alt*(1-f), # fetal is 0/1
 					1*f + p_maternal_alt*(1-f)] # fetal is 1/1
-
-		return frag_i_likelihoods
-
 	elif frag_genotype == ref:
 		p_maternal_ref = 1 - (maternal_gt / 2)
 		frag_i_likelihoods = [	1*f + p_maternal_ref*(1-f), # fetal is 0/0
 					0.5*f + p_maternal_ref*(1-f), # fetal is 0/1
 					0*f + p_maternal_ref*(1-f)] # fetal is 1/1
-
-		return frag_i_likelihoods
+	else:
+		frag_i_likelihoods = None
+	
+	return frag_i_likelihoods
 
 def calculate_likelihoods(
 	rec,
@@ -107,11 +106,10 @@ def calculate_likelihoods(
 	'''
 
 	chrom, pos, ref, alt = rec.CHROM, str(rec.POS), rec.REF, str(rec.ALT[0])
-	chrom_pos = str(chrom) + ':' + str(pos)
-
+	
 	variant_len = len(ref) - len(alt)
 
-	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom + '_snps', chrom_pos + '.json')
+	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom, pos + '.json')
 	pos_data = pd.DataFrame(json_load(snp_json_path))
 
 	if pos_data is not None:
@@ -150,7 +148,7 @@ def calculate_likelihoods(
 	return sum_log_fragments_likelihoods_df
 
 def calculate_phred(joint_probabilities):
-    libphred = np.ctypeslib.load_library('libphred.so','/groups/nshomron/tomr/projects/cffdna/hoobari/src/')
+    libphred = np.ctypeslib.load_library('libphred.so','/groups/nshomron/tomr/projects/cffdna/hoobari/src/') #TODO - fix to relative path
     libphred.calculatePhred.restype = ctypes.c_longdouble
     cdubs = joint_probabilities.ctypes.data_as(ctypes.POINTER(ctypes.c_longdouble))
 
@@ -158,7 +156,9 @@ def calculate_phred(joint_probabilities):
 
 def calculate_posteriors(var_priors, var_likelihoods):
 	# Convert to numeric values just in case
+	print(var_priors, var_likelihoods)
 	var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
+	print(var_priors, var_likelihoods)
 
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),

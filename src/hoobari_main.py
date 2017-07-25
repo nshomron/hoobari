@@ -95,10 +95,7 @@ for tup in co_reader:
 			# calculate priors
 			maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data.GT)
 			paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
-			print(variant_name)
-			print(maternal_gt, paternal_gt)
 			priors, priors_origin = position.calculate_priors(maternal_gt, paternal_gt)
-			print(priors, priors_origin)
 			
 
 			# calculate likelihoods
@@ -116,12 +113,11 @@ for tup in co_reader:
 			print(joint_probabilities, prediction, phred)
 
 			# parental information for INFO field
-			parents_format = parents_reader.formats
+			parents_format = parents_rec.FORMAT
 			matinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values())
 			patinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values())
-			rec_info_dic = OrderedDict([	('MATINFO_FORMAT', parents_format),
+			rec_info_dic = OrderedDict([	('PARENTS_FORMAT', parents_format),
 							('MAT_INFO', matinfo),
-							('PATINFO_FORMAT', parents_format),
 							('PAT_INFO', patinfo),
 							('PARENTS_QUAL', str(parents_rec.QUAL))])
 
@@ -133,7 +129,6 @@ for tup in co_reader:
 
 			# write var out (to file passed with -v or to output)
 			vcf_out.print_var(cfdna_rec, phred, rec_info_dic, cfdna_geno_sample_dic, out_path = args.vcf_output)
-	
 	else:
 		vcf_row = [	cfdna_rec.CHROM,
 				str(cfdna_rec.POS),
