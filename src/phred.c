@@ -1,44 +1,49 @@
 #include <stdio.h>
 #include <math.h>
 
-double calculatePhred(double* probs);
+long double calculatePhred(long double* probs);
 
-int main(int argc, char** argv)
+long double calculatePhred(long double* probs)
 {
-    double probs[] = {0.5,1.45,3.23521};
-    double res = calculatePhred(probs);
-    printf("%f", res);
-    return 0;
-}
+    // Find minimal value
+    long double min = probs[0];
+    for(int i=1; i<3; i++){
+        if (probs[i] < min){
+            min=probs[i];
+        }
+    }
 
-double calculatePhred(double* probs)
-{
+    // Substract minimal value from all values
+    for(int i=0; i<3; i++){
+        probs[i]-=min;
+    }
+
     // exponent
     for(int i=0; i<3; i++){
         probs[i]=exp(probs[i]);
     }
 
     // Sum exponents
-    double sum_exp=0.0;
+    long double sum_exp=0.0;
     for(int i=0; i<3; i++){
         sum_exp+=probs[i];
     }
 
     // Divide by sum
-    double posteriors[3];
+    long double posteriors[3];
     for(int i=0; i<3; i++){
         posteriors[i] = probs[i]/sum_exp;
     }
 
     // Find maximal posterior value
-    double max = 0.0;
-    for(int i=0; i<3; i++){
+    long double max = posteriors[0];
+    for(int i=1; i<3; i++){
         if(max < posteriors[i]){
             max = posteriors[i];
         }
     }
 
-    double phred = (log10(1-max))*(-10);
+    long double phred = (log10(1-max))*(-10);
 
     return phred;
 }
