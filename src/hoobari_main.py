@@ -44,21 +44,29 @@ args = parser.parse_args()
 
 if not args.preprocessing_pkl_path:
 	err_rate = 0.0003
-	parents_gt = preprocessing.parse_parents_vcf(args.parents_vcf, fetal_sex = None)
+	json_dir = os.path.join(args.tmp_dir, 'jsons')
+	parents_gt = preprocessing.parse_parents_vcf(args.parents_vcf, fetal_sex = None, from_pkl = True, pkl_path = os.path.join(args.tmp_dir, 'parents_gt.pkl'))
 	shared_fragments_dic, fetal_fragments_dic = preprocessing.create_fetal_and_shared_fragment_pools(	parents_gt,
 														args.maternal_sample_name,
-														args.paternal_sample_name)
+														args.paternal_sample_name,
+														json_dir)
 	total_fetal_fraction = preprocessing.calculate_total_fetal_fraction(shared_fragments_dic, fetal_fragments_dic)
-	known_fetal_frags_dic = preprocessing.get_all_known_fetal_fragments(parents_gt, fetal_fragments_dic)
 	fetal_fractions_df = preprocessing.create_fetal_fraction_per_length_df(	shared_fragments_dic,
 										fetal_fragments_dic,
 										window = 3,
 										max = 500,
 										plot_dir = False)
+	del shared_fragments_dic
+	known_fetal_frags_dic = preprocessing.get_all_known_fetal_fragments(	parents_gt,
+										args.maternal_sample_name,
+										args.paternal_sample_name,
+										fetal_fragments_dic,
+										json_dir)
+
 
 	pkl_save([err_rate, parents_gt, total_fetal_fraction, known_fetal_frags_dic, fetal_fractions_df], os.path.join(args.tmp_dir, 'pre_processing.pkl'))
 else:
-	err_rate, parents_gt, total_fetal_fraction, known_fetal_frags_dic, fetal_fractions_df = pkl_load(args.use_preprocessing_from_pkl)
+	err_rate, parents_gt, total_fetal_fraction, known_fetal_frags_dic, fetal_fractions_df = pkl_load(args.preprocessing_pkl_path)
 
 cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
 parents_reader = vcf.Reader(filename = args.parents_vcf)
@@ -86,10 +94,15 @@ for tup in co_reader:
 			# calculate priors
 			maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data.GT)
 			paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
-			priors = position.calculate_priors(maternal_gt, paternal_gt)
+			print(variant_name)
+			print(maternal_gt, paternal_gt)
+			priors, priors_origin = position.calculate_priors(maternal_gt, paternal_gt)
+			print(priors, priors_origin)
+			
 
 			# calculate likelihoods
 			likelihoods = position.calculate_likelihoods(	cfdna_rec,
+									maternal_gt,
 									args.tmp_dir,
 									total_fetal_fraction,
 									fetal_fractions_df,
@@ -99,11 +112,12 @@ for tup in co_reader:
 
 			# calculate posteriors
 			joint_probabilities, prediction, phred = position.calculate_posteriors(priors, likelihoods)
+			print(joint_probabilities, prediction, phred)
 
 			# parental information for INFO field
-			parents_format = parents_reader.FORMAT
-			matinfo = ':'.join(str(i) for i in rec_sample_to_string(parents_rec, mother_id).values())
-			patinfo = ':'.join(str(i) for i in rec_sample_to_string(parents_rec, father_id).values())
+			parents_format = parents_reader.formats
+			matinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values())
+			patinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values())
 			rec_info_dic = OrderedDict([	('MATINFO_FORMAT', parents_format),
 							('MAT_INFO', matinfo),
 							('PATINFO_FORMAT', parents_format),
@@ -111,7 +125,7 @@ for tup in co_reader:
 							('PARENTS_QUAL', str(parents_rec.QUAL))])
 
 			# fetal information for the sample and FORMAT fields
-			cfdna_geno_sample_dic = rec_sample_to_string(cfdna_rec, cfdna_id)
+			cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
 			cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
 			del cfdna_geno_sample_dic['GL']
 			cfdna_geno_sample_dic['GJ'] = (','.join(str(p) for p in list(joint_probabilities)))

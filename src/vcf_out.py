@@ -54,12 +54,11 @@ def printvcf(x, *args, out_path = False, **kargs):
 def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sample_name, info_dic, reserved_formats, output_path = False):
 	
 	if cfdna_vcf_reader.metadata['reference'] != parents_vcf_reader.metadata['reference']:
-		printerr('ERROR: the vcf files are not based on the same reference genome!')
+		printerr('Warning! are the vcf files based on the same reference genome?')
 		printerr('cfDNA:', str(cfdna_vcf_reader.metadata['reference']))
 		printerr('parental:', str(parents_vcf_reader.metadata['reference']))
 	if cfdna_vcf_reader.contigs != parents_vcf_reader.contigs:
-		printerr(	'Warning: cfdna and parental vcf files were aligned to same reference file \
-				but their contigs are different')
+		printerr(	'Warning! cfdna and parental vcf files have different contigs')
 		printerr('cfDNA:', str(cfdna_vcf_reader.contigs))
 		printerr('parental:', str(parents_vcf_reader.contigs))
 

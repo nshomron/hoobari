@@ -60,7 +60,7 @@ def calculate_priors(maternal_gt, paternal_gt):
 
 	return (priors, priors_source)
 
-def calculate_fragment_i(frag_genotype, ref, alt, f, err_rate):
+def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 	'''
 	probabilities of each fragment i to show the reference allele, given one of the 3 possible fetal genotypes.
 	P(frag_i | fetal_genotype) = P(frag_i | frag from fetus)P(frag from fetus | fetal_genotype) + P(frag_i | frag from mother)P(frag from mother | fetal_genotype)
@@ -72,16 +72,26 @@ def calculate_fragment_i(frag_genotype, ref, alt, f, err_rate):
 	'''
 
 	# fetal genotypes: 0,1,2
-
+	
 	if frag_genotype == alt:
-		frag_i_likelihoods = [0.5*(1-f), 0.5, 0.5*(1+f)]
+		p_maternal_alt = maternal_gt / 2
+		frag_i_likelihoods = [	0*f + p_maternal_alt*(1-f), # fetal is 0/0
+					0.5*f + p_maternal_alt*(1-f), # fetal is 0/1
+					1*f + p_maternal_alt*(1-f)] # fetal is 1/1
+
 		return frag_i_likelihoods
+
 	elif frag_genotype == ref:
-		frag_i_likelihoods = [0.5*(1+f), 0.5, 0.5*(1-f)]
+		p_maternal_ref = 1 - (maternal_gt / 2)
+		frag_i_likelihoods = [	1*f + p_maternal_ref*(1-f), # fetal is 0/0
+					0.5*f + p_maternal_ref*(1-f), # fetal is 0/1
+					0*f + p_maternal_ref*(1-f)] # fetal is 1/1
+
 		return frag_i_likelihoods
 
 def calculate_likelihoods(
-	cfdna_rec,
+	rec,
+	maternal_gt,
 	tmp_dir,
 	total_fetal_fraction,
 	fetal_fractions_df,
@@ -129,8 +139,7 @@ def calculate_likelihoods(
 			else:
 				ff = total_fetal_fraction
 
-
-			frag_i_likelihood_list = calculate_fragment_i(frag_genotype, ref, alt, ff, err_rate)
+			frag_i_likelihood_list = calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, ff, err_rate)
 			if frag_i_likelihood_list is not None:
 				fragments_likelihoods_list.append(frag_i_likelihood_list)
 
@@ -173,7 +182,7 @@ def calculate_phred(joint_probabilities):
 
 def calculate_posteriors(var_priors, var_likelihoods):
 	# Convert to numeric values just in case
-	var_priors, var_likelihoods=pd.to_numeric(var_priors),pd.to_numeric(var_likelihoods)
+	var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
 
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),

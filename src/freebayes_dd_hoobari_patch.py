@@ -11,12 +11,24 @@ from json_commands import *
 
 # --------- parse args ---------
 parser = argparse.ArgumentParser()
-parser.add_argument("-r", "--range")
-parser.add_argument("-s", "--sample_id")
 parser.add_argument("-b", "--bam_file")
 parser.add_argument("-t", "--tmp_dir")
 args = parser.parse_args()
 # ------------------------------
+
+'''
+This patch uses freebayes' algorithm to create a folders' tree: tmp_folder/jsons/chr[1-22,X,Y].
+In each chromosome's folder it creates json files named after the position of the variant they represent.
+
+Usage (in bash, using Python 3.5):
+freebayes -dd -f [REFERENCE] [OPTIONS] [cfDNA_BAM_FILE] 2>&1 >[OUTPUT] | python freebayes_dd_hoobari_patch.py -b cfDNA_BAM_FILE -t tmp_folder
+
+Explanation:
+1) freebayes has to be run with -dd flag, which print more verbose debugging output (and requires "make DEBUG" for installation)
+2) Since freebayes' debug information is written to stderr, 2>&1 redirects it to stdout in order to pipe it
+3) the tmp_folder created here is the same one you should later use when you run hoobari
+'''
+
 
 out_dir = os.path.join(args.tmp_dir, 'jsons')
 os.makedirs(out_dir, exist_ok=True)
@@ -35,7 +47,7 @@ for line in stdin:
 	elif line.startswith('haplo_obs'):
 		if initiate_json:
 			chrom, position = var.split(':')
-			bam_records_at_position = bam_reader.fetch(chrom, int(position) - 1000, int(position) + 1000) # take a large flanking area, since there's realignment
+			bam_records_at_position = bam_reader.fetch(chrom, int(position) - 1000, int(position) + 1000) # include a flanking region, since there's local realignment
 			template_lengths_at_position_dic = {}
 			for rec in bam_records_at_position:
 				template_lengths_at_position_dic[rec.query_name] = rec.template_length

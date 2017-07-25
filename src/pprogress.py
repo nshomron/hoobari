@@ -22,7 +22,7 @@ def pprogress(progress_index, length, percents):
 	#printerr(str(round(100*((progress_index)/length), 3)) + '%' + '\r', end="")
 	
 	if progress_index in percents:
-		print(str(progress_index), '/', str(length), '(' + str(int(100*(progress_index / length))) + '%)')
+		print(str(progress_index), '/', str(length), '(' + str(round(100*(progress_index / length), 0 )) + '%)')
 	elif progress_index == length:
 		print('done')
 
