@@ -13,6 +13,7 @@ import db
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--bam_file")
 parser.add_argument("-t", "--tmp_dir")
+parser.add_argument("-f", "--drop_db", action='store_true')
 args = parser.parse_args()
 # ------------------------------
 
@@ -29,12 +30,12 @@ Explanation:
 3) the tmp_folder created here is the same one you should later use when you run hoobari
 '''
 
-chromosomes = ['chr' + str(i) for i in list(range(1,23)) + ['X']]
-
-bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
-
 # Initiate variants database
-vardb=db.Variants()
+print(args.drop_db)
+vardb=db.Variants(args.drop_db)
+
+chromosomes = ['chr' + str(i) for i in list(range(1,23)) + ['X']]
+bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 
 for line in stdin:
 
