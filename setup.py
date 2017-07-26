@@ -5,7 +5,7 @@ phred = Extension('phred', sources=['src/phred.c'], libraries=['m'])
 setup(name='hoobari',
       packages=['hoobari'],
       package_dir= { 'hoobari':'src' },
-      install_requires=['sqlite3','vcf','pickle','numpy','pandas'],
+      install_requires=['sqlite3','vcf','pickle','numpy','pandas','pysam'],
       ext_modules=[phred],
       version='1.0',
       author='Tom Rabinowitz',
