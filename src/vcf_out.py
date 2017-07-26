@@ -5,26 +5,22 @@ import sys
 from time import strftime
 from stderr import printerr
 
-info_dic = OrderedDict([('MATINFO_FORMAT', {	'num': '.',
+info_dic = OrderedDict([('PARENTS_FORMAT', {	'num': '.',
 						'type': 'String',
-						'desc': '"Format of maternal sample ganotyping information"',
-						'source': '"parental vcf"'}),
+						'desc': 'Format of parental sample ganotyping information',
+						'source': 'parental vcf'}),
 			('MAT_INFO', {		'num': '.',
 						'type': 'String',
-						'desc': '"Maternal sample ganotyping information"',
-						'source': '"parental vcf"'}),
-			('PATINFO_FORMAT', {	'num': '.',
-						'type': 'String',
-						'desc': '"Format of paternal sample ganotyping information"',
-						'source': '"parental vcf"'}),
+						'desc': 'Maternal sample ganotyping information',
+						'source': 'parental vcf'}),
 			('PAT_INFO', {		'num': '.',
 						'type': 'String',
-						'desc': '"Paternal sample ganotyping information"',
-						'source': '"parental vcf"'}),
+						'desc': 'Paternal sample ganotyping information',
+						'source': 'parental vcf'}),
 			('PARENTS_QUAL', {	'num': '.',
 						'type': 'Float',
-						'desc': '"Parental samples QUAL score"',
-						'source': '"parental vcf"'})])
+						'desc': 'Parental samples QUAL score',
+						'source': 'parental vcf'})])
 
 reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GJ')
 
@@ -123,24 +119,20 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 
 def rec_sample_to_string(rec, sample):
 	data = rec.genotype(sample).data
+	#print(data)
 	
-	gt = str(data.GT)
-	dp = str(data.DP)
-	ad = ','.join(str(i) for i in data.AD)
-	ro = str(data.RO)
-	qr = str(data.QR)
-	ao = str(data.AO[0])
-	qa = str(data.QA[0])
-	gl = ','.join(str(i) for i in data.GL)
-
-	format_and_gt_dic = OrderedDict([	('GT', gt),
-						('DP', dp),
-						('AD', ad),
-						('RO', ro),
-						('QR', qr),
-						('AO', ao),
-						('QA', qa),
-						('GL', gl)])
+	format_and_gt_dic = OrderedDict([])
+	format_list = rec.FORMAT.split(':')
+	for f in format_list:
+		idx = format_list.index(f)
+		if f in ('AD', 'GL'):
+			value = ','.join(str(i) for i in data[idx])
+		elif (type(f) is list) and len(f) == 1:
+			value = str(data[idx][0])
+		else:
+			value = str(data[idx])
+		
+		format_and_gt_dic[f] = value
 
 	return format_and_gt_dic
 
@@ -167,3 +159,18 @@ def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 	variant_row = '\t'.join(row_list)
 	
 	printvcf(variant_row, out_path = out_path)
+
+def unsupported_position(rec, out_path = False):
+		ariant_row = [	rec.CHROM,
+				str(rec.POS),
+				'.',
+				rec.REF,
+				rec.ALT,
+				'.',
+				'.',
+				'MATINFO_FORMAT=.;MAT_INFO=.;PATINFO_FORMAT=.;PAT_INFO=.;PARENTS_QUAL=.',
+				'.',
+				'.']
+		
+		printvcf(variant_row, out_path = out_path)
+
