@@ -95,7 +95,6 @@ for tup in co_reader:
 			# calculate priors
 			maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data.GT)
 			paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
-			print(maternal_gt, paternal_gt)
 			priors, priors_origin = position.calculate_priors(maternal_gt, paternal_gt)
 			
 
@@ -110,24 +109,39 @@ for tup in co_reader:
 									args.model)
 
 			# calculate posteriors
-			joint_probabilities, prediction, phred = position.calculate_posteriors(priors, likelihoods)
-			print(joint_probabilities, prediction, phred)
-
+			joint_probabilities, prediction, phred, probabilities_source = position.calculate_posteriors(priors, likelihoods)
+			
 			if joint_probabilities is not None:
+				# fetal information for the sample and FORMAT fields
+				if cfdna_rec.genotype(cfdna_id).data.GT != '.':
+					cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
+					cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
+					del cfdna_geno_sample_dic['GL']
+					cfdna_geno_sample_dic['GJ'] = (','.join(str(round(p,2)) for p in list(joint_probabilities)))
+				else:
+					cfdna_geno_sample_dic = '.'
+					probabilities_source = '.'
+
+
 				# parental information for INFO field
 				parents_format = parents_rec.FORMAT
-				matinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values())
-				patinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values())
+				matinfo = patinfo = '.'
+
+				# print (parents_rec)
+				# print(parents_rec.genotype(mother_id).data)
+				# print(parents_rec.genotype(father_id).data)
+				if parents_rec.genotype(mother_id).data.GT != '.':
+					matinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values()])
+				if parents_rec.genotype(father_id).data.GT != '.':
+					patinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values()])
+
 				rec_info_dic = OrderedDict([	('PARENTS_FORMAT', parents_format),
 								('MAT_INFO', matinfo),
 								('PAT_INFO', patinfo),
-								('PARENTS_QUAL', str(parents_rec.QUAL))])
+								('PARENTS_QUAL', str(parents_rec.QUAL)),
+								('PROB_SOURCE', probabilities_source)])
 
-				# fetal information for the sample and FORMAT fields
-				cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
-				cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
-				del cfdna_geno_sample_dic['GL']
-				cfdna_geno_sample_dic['GJ'] = (','.join(str(p) for p in list(joint_probabilities)))
+
 
 				# write var out (to file passed with -v or to output)
 				vcf_out.print_var(cfdna_rec, phred, rec_info_dic, cfdna_geno_sample_dic, out_path = args.vcf_output)

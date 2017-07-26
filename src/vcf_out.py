@@ -20,7 +20,11 @@ info_dic = OrderedDict([('PARENTS_FORMAT', {	'num': '.',
 			('PARENTS_QUAL', {	'num': '.',
 						'type': 'Float',
 						'desc': 'Parental samples QUAL score',
-						'source': 'parental vcf'})])
+						'source': 'parental vcf'}),
+			('PROB_SOURCE', {	'num': '',
+						'type': 'String',
+						'desc': 'Whether the probabilities for the calculations are only the posteriors, only the likelihoods, or joint',
+						'source': 'hoobari'})])
 
 reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GJ')
 
@@ -121,19 +125,22 @@ def rec_sample_to_string(rec, sample):
 	data = rec.genotype(sample).data
 	#print(data)
 	
-	format_and_gt_dic = OrderedDict([])
-	format_list = rec.FORMAT.split(':')
-	for f in format_list:
-		idx = format_list.index(f)
-		if f in ('AD', 'GL'):
-			value = ','.join(str(i) for i in data[idx])
-		elif (type(f) is list) and len(f) == 1:
-			value = str(data[idx][0])
-		else:
-			value = str(data[idx])
+	if data:
+		format_and_gt_dic = OrderedDict([])
+		format_list = rec.FORMAT.split(':')
+		for f in format_list:
+			idx = format_list.index(f)
+			if f in ('AD', 'GL'):
+				value = ','.join(str(i) for i in data[idx])
+			elif (type(f) is list) and len(f) == 1:
+				value = str(data[idx][0])
+			else:
+				value = str(data[idx])
+			
+			format_and_gt_dic[f] = value
+	else: 
+		format_and_gt_dic = None
 		
-		format_and_gt_dic[f] = value
-
 	return format_and_gt_dic
 
 def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
@@ -151,9 +158,12 @@ def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 	row_list += [';'.join(info_list)]
 
 	# columns 9-10
-	format_list = list(format_and_gt_dic.keys())
-	fetal_gt_list = list(format_and_gt_dic.values())
-	row_list += [':'.join(format_list)] + [':'.join(fetal_gt_list)]
+	if format_and_gt_dic == '.':
+		row_list += ['.', '.']
+	else:
+		format_list = list(format_and_gt_dic.keys())
+		fetal_gt_list = list(format_and_gt_dic.values())
+		row_list += [':'.join(format_list)] + [':'.join(fetal_gt_list)]
 
 	# merge all to one row string
 	variant_row = '\t'.join(row_list)
