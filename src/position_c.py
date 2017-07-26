@@ -47,8 +47,8 @@ def calculate_priors(maternal_gt, paternal_gt):
 		priors_source = '.'
 
 	priors = [	(1-p_maternal_alt)*(1-p_paternal_alt),
-				p_maternal_alt*(1-p_paternal_alt) + (1-p_maternal_alt)*p_paternal_alt,
-				p_maternal_alt*p_paternal_alt]
+			p_maternal_alt*(1-p_paternal_alt) + (1-p_maternal_alt)*p_paternal_alt,
+			p_maternal_alt*p_paternal_alt]
 
 	for i in range(len(priors)):
 		if priors[i] == 0:
@@ -87,6 +87,13 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 	
 	return frag_i_likelihoods
 
+def get_fetal_fraction_per_length(tlen, ff_per_length_dataframe, variant_length, total_fetal_fraction):
+	try:
+		ff = fetal_fractions_df[int(row[2]) - variant_len]
+	except:
+		ff = total_fetal_fraction
+	return ff
+
 def calculate_likelihoods(
 	rec,
 	maternal_gt,
@@ -117,22 +124,14 @@ def calculate_likelihoods(
 		fragments_likelihoods_list = []
 		for row in pos_data.itertuples():
 			frag_genotype = row[1]
-
-			# get fetal fraction depending on factors
-			if model == 'origin':
-				frag_qname = row[3]
-				if frag_qname in known_fetal_qnames_dic:
-					ff = 0.7
-				else:
-					try:
-						ff = fetal_fractions_df[int(row[2]) - variant_len]
-					except:
-						ff = total_fetal_fraction
-			elif model == 'lengths':
-				try:
-					ff = fetal_fractions_df[int(row[2]) - variant_len]
-				except:
-					ff = total_fetal_fraction
+			frag_length = int(row[2]) - variant_len
+			frag_qname = row[3]
+			
+			# get fetal fraction
+			if (model == 'origin') and (frag_qname in known_fetal_qnames_dic):
+				ff = 0.7
+			elif (model == 'lengths') and (frag_length in fetal_fractions_df.index.values):
+				ff = fetal_fractions_df[frag_length]
 			else:
 				ff = total_fetal_fraction
 
@@ -144,6 +143,7 @@ def calculate_likelihoods(
 		fragments_likelihoods_df = np.array(fragments_likelihoods_list)
 		log_fragments_likelihoods_df = np.log(fragments_likelihoods_df)
 		sum_log_fragments_likelihoods_df = log_fragments_likelihoods_df.sum(axis = 0)
+		sum_log_fragments_likelihoods_df[np.isinf(sum_log_fragments_likelihoods_df)] = None
 
 	return sum_log_fragments_likelihoods_df
 
@@ -157,20 +157,27 @@ def calculate_phred(joint_probabilities):
 def calculate_posteriors(var_priors, var_likelihoods):
 	# Convert to numeric values just in case
 	print(var_priors, var_likelihoods)
-	var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
+	#var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
+	var_priors, var_likelihoods = np.array(var_priors, dtype = np.float), np.array(var_likelihoods, dtype = float)
 	print(var_priors, var_likelihoods)
 
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),
 	# take only likelihoods
-	if any(var_priors):
-		joint_probabilities = np.sum((var_priors, var_likelihoods), axis = 0)
-	else:
-		joint_probabilities = var_likelihoods
+	joint_probabilities = np.add(var_priors, var_likelihoods)
+	if not any(joint_probabilities[~np.isnan(joint_probabilities)]):
+		if any(var_likelihoods):
+			joint_probabilities = var_likelihoods
+		elif any(var_priors):
+			joint_probabilities = var_priors
+		else:
+			joint_probabilities = prediction = phred = None
 
-	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
-	prediction = joint_probabilities[~np.isnan(joint_probabilities)].argmax()
-
-	phred = calculate_phred(joint_probabilities)
+	print(joint_probabilities)
+	if joint_probabilities is not None:
+		# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
+		prediction = joint_probabilities[~np.isnan(joint_probabilities)].argmax()
+		#phred = calculate_phred(joint_probabilities)
+		phred = 300
 
 	return (joint_probabilities, prediction, phred)
