@@ -95,10 +95,8 @@ for tup in co_reader:
 			# calculate priors
 			maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data.GT)
 			paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
-			print(variant_name)
 			print(maternal_gt, paternal_gt)
 			priors, priors_origin = position.calculate_priors(maternal_gt, paternal_gt)
-			print(priors, priors_origin)
 			
 
 			# calculate likelihoods
@@ -115,34 +113,25 @@ for tup in co_reader:
 			joint_probabilities, prediction, phred = position.calculate_posteriors(priors, likelihoods)
 			print(joint_probabilities, prediction, phred)
 
-			# parental information for INFO field
-			parents_format = parents_reader.formats
-			matinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values())
-			patinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values())
-			rec_info_dic = OrderedDict([	('MATINFO_FORMAT', parents_format),
-							('MAT_INFO', matinfo),
-							('PATINFO_FORMAT', parents_format),
-							('PAT_INFO', patinfo),
-							('PARENTS_QUAL', str(parents_rec.QUAL))])
+			if joint_probabilities is not None:
+				# parental information for INFO field
+				parents_format = parents_rec.FORMAT
+				matinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values())
+				patinfo = ':'.join(str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values())
+				rec_info_dic = OrderedDict([	('PARENTS_FORMAT', parents_format),
+								('MAT_INFO', matinfo),
+								('PAT_INFO', patinfo),
+								('PARENTS_QUAL', str(parents_rec.QUAL))])
 
-			# fetal information for the sample and FORMAT fields
-			cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
-			cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
-			del cfdna_geno_sample_dic['GL']
-			cfdna_geno_sample_dic['GJ'] = (','.join(str(p) for p in list(joint_probabilities)))
+				# fetal information for the sample and FORMAT fields
+				cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
+				cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
+				del cfdna_geno_sample_dic['GL']
+				cfdna_geno_sample_dic['GJ'] = (','.join(str(p) for p in list(joint_probabilities)))
 
-			# write var out (to file passed with -v or to output)
-			vcf_out.print_var(cfdna_rec, phred, rec_info_dic, cfdna_geno_sample_dic, out_path = args.vcf_output)
-	
+				# write var out (to file passed with -v or to output)
+				vcf_out.print_var(cfdna_rec, phred, rec_info_dic, cfdna_geno_sample_dic, out_path = args.vcf_output)
+			else:
+				vcf_out.unsupported_position(cfdna_rec, out_path = args.vcf_output)
 	else:
-		vcf_row = [	cfdna_rec.CHROM,
-				str(cfdna_rec.POS),
-				'.',
-				cfdna_rec.REF,
-				cfdna_rec.ALT,
-				'.',
-				'.',
-				'MATINFO_FORMAT=.;MAT_INFO=.;PATINFO_FORMAT=.;PAT_INFO=.;PARENTS_QUAL=.',
-				'.',
-				'.']
-		vcf_out.printvcf(variant_row, out_path = args.vcf_output)
+		vcf_out.unsupported_position(cfdna_rec, out_path = args.vcf_output)
