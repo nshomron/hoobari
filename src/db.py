@@ -3,9 +3,9 @@ import csv
 from sys import stderr
 
 class Variants(object):
-    def __init__(self, dropdb=False,dbname='hoobari.db'):
+    def __init__(self, dropdb=False,dbpath='hoobari.db'):
         # Connect to DB
-        self.con=sqlite3.connect(dbname,isolation_level=None)
+        self.con=sqlite3.connect(dbpath,isolation_level=None)
 
         # Drop existing database if needed
         if dropdb:

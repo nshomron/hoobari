@@ -13,6 +13,7 @@ import db
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--bam_file")
 parser.add_argument("-t", "--tmp_dir")
+parser.add_argument("-p", "--db_path")
 parser.add_argument("-f", "--drop_db", action='store_true')
 args = parser.parse_args()
 # ------------------------------
@@ -31,8 +32,7 @@ Explanation:
 '''
 
 # Initiate variants database
-print(args.drop_db)
-vardb=db.Variants(args.drop_db)
+vardb=db.Variants(args.drop_db,path=args.db_path)
 
 chromosomes = ['chr' + str(i) for i in list(range(1,23)) + ['X']]
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
