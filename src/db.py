@@ -27,7 +27,6 @@ class Variants(object):
             query+='({0},"{1}","{2}","{3}",{4}),'.format(position,
                     chromosome,genotype[0],genotype[2],genotype[1])
         query=query[:-1] + ';'
-        print(query)
         self.con.execute(query)
 
     # Insert variant to table
