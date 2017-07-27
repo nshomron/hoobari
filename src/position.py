@@ -11,8 +11,7 @@ import pandas as pd
 from json_commands import *
 import argparse
 from multiprocessing import Pool, cpu_count
-from decimal import Decimal, getcontext
-getcontext().prec = 10000
+import ctypes
 # project's
 import parse_gt
 from stderr import printerr
@@ -34,28 +33,44 @@ def calculate_priors(maternal_gt, paternal_gt):
 	==>
 	[0.5f, 0.5, 0.5(1-f)]
 	'''
+
 	if (maternal_gt in (0,1,2)) and (paternal_gt in (0,1,2)):
 		p_maternal_alt = maternal_gt / 2
 		p_paternal_alt = paternal_gt / 2
 		priors_source = 'parents_vcf'
-	else: # get maf or af or ldaf
-		maf = retrieve_maf_from_ensembl(variant_name)
-		if maf[1] is not None:
-			p_maternal_alt = p_paternal_alt = maf[1]
-			priors_source = maf[0]
-		else:
-			priors = [None, None, None]
-			priors_source = '.'
-
-	priors = [	(1-p_maternal_alt)*(1-p_paternal_alt),
+		priors = [	(1-p_maternal_alt)*(1-p_paternal_alt),
 				p_maternal_alt*(1-p_paternal_alt) + (1-p_maternal_alt)*p_paternal_alt,
 				p_maternal_alt*p_paternal_alt]
+				
+		for i in range(len(priors)):
+			if priors[i] == 0:
+				priors[i] = None
+			else:
+				priors[i] = np.log(priors[i])
+	# elif not maternal_gt and not paternal_gt:
+	# 	priors = [0.25, 0.5, 0.25]
+	# 	priors_source = 'naive'		
+	# elif not maternal_gt:
+	# 	p_paternal_alt = paternal_gt / 2
+	# 	p_maternal_alt = 0.5
+	# 	priors_source = 'only_paternal'
+	# elif not paternal_gt:
+	# 	p_maternal_alt = maternal_gt / 2
+	# 	priors_source = 'only_maternal'
+	else:
+		priors = [None, None, None]
+		priors_source = 'no_priors'
 
-	for i in range(len(priors)):
-		if priors[i] == 0:
-			priors[i] = None
-		else:
-			priors[i] = np.log(priors[i])
+	# if priors_source != 'naive':
+
+	# else:
+	# 	get maf or af or ldaf
+	# 	maf = retrieve_maf_from_ensembl(variant_name)
+	# 	if maf[1] is not None:
+	# 		p_maternal_alt = p_paternal_alt = maf[1]
+	# 		priors_source = maf[0]
+
+
 
 
 	return (priors, priors_source)
@@ -72,22 +87,21 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 	'''
 
 	# fetal genotypes: 0,1,2
-	
+	# print(frag_genotype)
 	if frag_genotype == alt:
 		p_maternal_alt = maternal_gt / 2
 		frag_i_likelihoods = [	0*f + p_maternal_alt*(1-f), # fetal is 0/0
 					0.5*f + p_maternal_alt*(1-f), # fetal is 0/1
 					1*f + p_maternal_alt*(1-f)] # fetal is 1/1
-
-		return frag_i_likelihoods
-
 	elif frag_genotype == ref:
 		p_maternal_ref = 1 - (maternal_gt / 2)
 		frag_i_likelihoods = [	1*f + p_maternal_ref*(1-f), # fetal is 0/0
 					0.5*f + p_maternal_ref*(1-f), # fetal is 0/1
 					0*f + p_maternal_ref*(1-f)] # fetal is 1/1
-
-		return frag_i_likelihoods
+	else:
+		frag_i_likelihoods = None
+	
+	return frag_i_likelihoods
 
 def calculate_likelihoods(
 	rec,
@@ -106,95 +120,84 @@ def calculate_likelihoods(
 	the model, such as the maternal genotype, fragment length and the fetal genotype (which is unknown,
 	so we check for all possibilities - 1/1, 0/1 and 0/0)
 	'''
+	sum_log_fragments_likelihoods_df = [None, None, None]
 
 	chrom, pos, ref, alt = rec.CHROM, str(rec.POS), rec.REF, str(rec.ALT[0])
-	chrom_pos = str(chrom) + ':' + str(pos)
-
+	
 	variant_len = len(ref) - len(alt)
 
-	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom + '_snps', chrom_pos + '.json')
+	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom, pos + '.json')
 	pos_data = pd.DataFrame(json_load(snp_json_path))
 
-	if pos_data is not None:
+	if (pos_data is not None) and (maternal_gt in (0,1,2)):
 
 		fragments_likelihoods_list = []
 		for row in pos_data.itertuples():
 			frag_genotype = row[1]
-
-			# get fetal fraction depending on factors
-			if model == 'origin':
-				frag_qname = row[3]
-				if frag_qname in known_fetal_qnames_dic:
-					ff = 0.7
-				else:
-					try:
-						ff = fetal_fractions_df[int(row[2]) - variant_len]
-					except:
-						ff = total_fetal_fraction
-			elif model == 'lengths':
-				try:
-					ff = fetal_fractions_df[int(row[2]) - variant_len]
-				except:
-					ff = total_fetal_fraction
+			frag_length = max(int(row[2]) - variant_len, 0)
+			frag_qname = row[3]
+			
+			# get fetal fraction
+			if (model == 'origin') and (frag_qname in known_fetal_qnames_dic):
+				ff = 0.7
+			elif (model == 'lengths') and (frag_length in fetal_fractions_df.index.values):
+				ff = fetal_fractions_df[frag_length]
 			else:
 				ff = total_fetal_fraction
 
 			frag_i_likelihood_list = calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, ff, err_rate)
 			if frag_i_likelihood_list is not None:
+				for i in range(len(frag_i_likelihood_list)):
+					if frag_i_likelihood_list[i] == 0: # 0 would cause -inf after log, and the sum would also be -inf
+						frag_i_likelihood_list[i] = 0.3 # TODO: change this when error is inserted to the model
 				fragments_likelihoods_list.append(frag_i_likelihood_list)
 
-		fragments_likelihoods_df = np.array(fragments_likelihoods_list)
-		log_fragments_likelihoods_df = np.log(fragments_likelihoods_df)
-		sum_log_fragments_likelihoods_df = log_fragments_likelihoods_df.sum(axis = 0)
+		if len(fragments_likelihoods_list) > 0:
+			fragments_likelihoods_df = np.array(fragments_likelihoods_list)
+			log_fragments_likelihoods_df = np.log(fragments_likelihoods_df)
+			sum_log_fragments_likelihoods_df = log_fragments_likelihoods_df.sum(axis = 0)
+			sum_log_fragments_likelihoods_df[np.isinf(sum_log_fragments_likelihoods_df)] = None
+
 
 	return sum_log_fragments_likelihoods_df
 
 def calculate_phred(joint_probabilities):
-	# -------- maybe this as new function? (make_phred or something) -----------
-	# calculate probabilities for the output vcf and for plotting success rates per maximum posterior threshold
-	joint_probabilities_c = joint_probabilities - np.min(joint_probabilities[~np.isnan(joint_probabilities)])
-	exp_joint_probabilities = np.exp(joint_probabilities_c)
-	if any(exp_joint_probabilities[np.isinf(exp_joint_probabilities)]):
-		use_decimal = True
-		exp_joint_probabilities_list = []
-		for d in joint_probabilities_c:
-			if np.isnan(d):
-				exp_joint_probabilities_list.append(Decimal(0))
-			else:
-				exp_joint_probabilities_list.append(Decimal(d).exp())
-		exp_joint_probabilities = np.array(exp_joint_probabilities_list)
-	else:
-		use_decimal = False
-		exp_joint_probabilities[np.isnan(exp_joint_probabilities)] = 0
+	libphred = np.ctypeslib.load_library('libphred.so','/groups/nshomron/tomr/projects/cffdna/hoobari/src/') #TODO - fix to relative path
+	libphred.calculatePhred.restype = ctypes.c_longdouble
+	cdubs = joint_probabilities.ctypes.data_as(ctypes.POINTER(ctypes.c_longdouble))
 
-	sum_exp_joint_probabilities = exp_joint_probabilities.sum()
-	posteriors = np.divide(exp_joint_probabilities, sum_exp_joint_probabilities)
-	posteriors = posteriors.astype(np.float128)
+	return libphred.calculatePhred(cdubs)
 
-	# 2017-07-17: note that here there should be another condition:
-	# if the max posterior shows fetal gt of 0, then phred = -10*log(P(gt is 1) + P(gt is 2)) = -10log(1 - P(gt is 0))
-	# if the max posterior shows fetal gt of either 1 or 2, then phred = -10*log(1 - (P(gt is 1) + P(gt is 2))) = -10log(P(gt is 0))
-
-	if use_decimal:
-		phred = float(-10*(np.log10(1 - posteriors.max())))
-	else:
-		phred = float(-10*(np.log10(1 - np.max(posteriors))))
+def get_prediction(joint_probabilities_nparray):
+	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
+	joint_probabilities_nparray[np.isnan(joint_probabilities_nparray)] = -np.inf
+	return joint_probabilities_nparray.argmax()
 
 def calculate_posteriors(var_priors, var_likelihoods):
 	# Convert to numeric values just in case
-	var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
-
+	#var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
+	var_priors, var_likelihoods = np.array(var_priors, dtype = np.float), np.array(var_likelihoods, dtype = float)
+	
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),
 	# take only likelihoods
-	if any(var_priors):
-		joint_probabilities = np.sum((var_priors, var_likelihoods), axis = 0)
-	else:
-		joint_probabilities = var_likelihoods
+	joint_probabilities = np.add(var_priors, var_likelihoods)
+	probabilities_source = 'joint'
+	if not any(joint_probabilities[~np.isnan(joint_probabilities)]): # if there are only nans in the joint
+		if any(var_likelihoods[~np.isnan(var_likelihoods)]):
+			joint_probabilities = var_likelihoods
+			probabilities_source = 'likelihoods'
+		# elif any(var_priors[~np.isnan(var_priors)]):
+		# 	joint_probabilities = var_priors
+		# 	probabilities_source = 'priors'
+		else:
+			joint_probabilities = prediction = phred = None
+			probabilities_source = 'none'
+			
 
-	# closest to 0 is the prediction (all three fetal genotypes have same number of fragments)
-	prediction = joint_probabilities[~np.isnan(joint_probabilities)].argmax()
+	if joint_probabilities is not None:
+		prediction = get_prediction(joint_probabilities)
+		phred = calculate_phred(joint_probabilities)
+		#phred = 300
 
-	phred = calculate_phred(joint_probabilities)
-
-	return (joint_probabilities, prediction, phred)
+	return (joint_probabilities, prediction, phred, probabilities_source)
