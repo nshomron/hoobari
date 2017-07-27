@@ -36,7 +36,7 @@ parser.add_argument("-model", "--model", default = 'simple', help = '	model for 
 									(Bayesian model based only on fetal fraction and parental genotypes), \
 									"lengths" (use different fetal fraction per fragment length), \
 									"origin" (use fragments that are very likely to be fetal, \
-									based on other SNPs on these fragments)')
+									based on other SNPs on these fragments)') # TODO: remove this argument and change the likelihoods function before relsease version
 
 args = parser.parse_args()
 
