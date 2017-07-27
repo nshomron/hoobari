@@ -85,6 +85,8 @@ vcf_out.make_header(	cfdna_reader,
 
 co_reader = vcf.utils.walk_together(cfdna_reader, parents_reader)
 for tup in co_reader:
+	joint_probabilities = prediction = phred = probabilities_source = None
+	
 	cfdna_rec, parents_rec = tup
 	
 	if parents_rec:
