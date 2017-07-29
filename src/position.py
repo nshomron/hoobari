@@ -33,7 +33,6 @@ def calculate_priors(maternal_gt, paternal_gt):
 	==>
 	[0.5f, 0.5, 0.5(1-f)]
 	'''
-
 	if (maternal_gt in (0,1,2)) and (paternal_gt in (0,1,2)):
 		p_maternal_alt = maternal_gt / 2
 		p_paternal_alt = paternal_gt / 2
@@ -41,12 +40,13 @@ def calculate_priors(maternal_gt, paternal_gt):
 		priors = [	(1-p_maternal_alt)*(1-p_paternal_alt),
 				p_maternal_alt*(1-p_paternal_alt) + (1-p_maternal_alt)*p_paternal_alt,
 				p_maternal_alt*p_paternal_alt]
-				
+
 		for i in range(len(priors)):
 			if priors[i] == 0:
 				priors[i] = None # TODO: really none or some very small value/s?
 			else:
 				priors[i] = np.log(priors[i])
+
 	# elif not maternal_gt and not paternal_gt:
 	# 	priors = [0.25, 0.5, 0.25]
 	# 	priors_source = 'naive'		
@@ -60,7 +60,6 @@ def calculate_priors(maternal_gt, paternal_gt):
 	else:
 		priors = [None, None, None]
 		priors_source = 'no_priors'
-
 	# if priors_source != 'naive':
 
 	# else:
@@ -204,8 +203,8 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# take only likelihoods
 	joint_probabilities = np.add(var_priors, var_likelihoods)
 	probabilities_source = 'joint'
-	if not any(joint_probabilities[~np.isnan(joint_probabilities)]): # if there are only nans in the joint
-		if any(var_likelihoods[~np.isnan(var_likelihoods)]):
+	if not len(joint_probabilities[~np.isnan(joint_probabilities)]) > 0: # if there are only nans in the joint #0 IS FALSE IN ANY!!!!!! USE LEN()
+		if len(var_likelihoods[~np.isnan(var_likelihoods)]) > 0:
 			joint_probabilities = var_likelihoods
 			probabilities_source = 'likelihoods'
 		# elif any(var_priors[~np.isnan(var_priors)]):

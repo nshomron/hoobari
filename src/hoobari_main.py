@@ -31,6 +31,7 @@ parser.add_argument("-parents_vcf", "--parents_vcf", help = 'The maternal plasma
 parser.add_argument("-cfdna_vcf", "--cfdna_vcf", help = 'The maternal plasma cfDNA VCF file')
 parser.add_argument("-t", "--tmp_dir", default = os.path.join(os.getcwd(), 'tmp_hb'), help = 'Directory for temporary files')
 parser.add_argument("-o", "--vcf_output", default = False, help = 'path for vcf output')
+parser.add_argument("-r", "--region", default = False, help = "run on a specific region as explained in pyvcf documentation")
 parser.add_argument("-pkl", "--preprocessing_pkl_path", default = False, help = 'path to load preprocessing data from')
 parser.add_argument("-model", "--model", default = 'simple', help = '	model for likelihoods calculation. possible values: "simple" \
 									(Bayesian model based only on fetal fraction and parental genotypes), \
@@ -70,6 +71,17 @@ else:
 
 cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
 parents_reader = vcf.Reader(filename = args.parents_vcf)
+if args.region:
+	args_region_split = args.region.split(':')
+	chrom = args_region_split[0]
+	if len(args_region_split) > 1: 
+		start, end = [int(i) for i in args_region_split[1].split('-')]
+		cfdna_reader = cfdna_reader.fetch(chrom, start, end)
+		parents_reader = parents_reader.fetch(chrom, start, end)
+	else:
+		cfdna_reader = cfdna_reader.fetch(chrom)
+		parents_reader = parents_reader.fetch(chrom)
+
 cfdna_id = cfdna_reader.samples[0]
 mother_id = args.maternal_sample_name
 father_id = args.paternal_sample_name
@@ -86,7 +98,7 @@ vcf_out.make_header(	cfdna_reader,
 co_reader = vcf.utils.walk_together(cfdna_reader, parents_reader)
 for tup in co_reader:
 	joint_probabilities = prediction = phred = probabilities_source = None
-	
+
 	cfdna_rec, parents_rec = tup
 	
 	if parents_rec:
