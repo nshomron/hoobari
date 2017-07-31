@@ -72,7 +72,7 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 	'''
 
 	# fetal genotypes: 0,1,2
-	
+
 	if frag_genotype == alt:
 		p_maternal_alt = maternal_gt / 2
 		frag_i_likelihoods = [	0*f + p_maternal_alt*(1-f), # fetal is 0/0
@@ -154,19 +154,14 @@ def calculate_phred(joint_probabilities):
 	# calculate probabilities for the output vcf and for plotting success rates per maximum posterior threshold
 	joint_probabilities_c = joint_probabilities - np.min(joint_probabilities[~np.isnan(joint_probabilities)])
 	exp_joint_probabilities = np.exp(joint_probabilities_c)
-	if any(exp_joint_probabilities[np.isinf(exp_joint_probabilities)]):
-		use_decimal = True
-		exp_joint_probabilities_list = []
-		for d in joint_probabilities_c:
-			if np.isnan(d):
-				exp_joint_probabilities_list.append(Decimal(0))
-			else:
-				exp_joint_probabilities_list.append(Decimal(d).exp())
-		exp_joint_probabilities = np.array(exp_joint_probabilities_list)
-	else:
-		use_decimal = False
-		exp_joint_probabilities[np.isnan(exp_joint_probabilities)] = 0
-
+	use_decimal = True
+	exp_joint_probabilities_list = []
+	for d in joint_probabilities_c:
+		if np.isnan(d):
+			exp_joint_probabilities_list.append(Decimal(0))
+		else:
+			exp_joint_probabilities_list.append(Decimal(d).exp())
+	exp_joint_probabilities = np.array(exp_joint_probabilities_list)
 	sum_exp_joint_probabilities = exp_joint_probabilities.sum()
 	posteriors = np.divide(exp_joint_probabilities, sum_exp_joint_probabilities)
 	posteriors = posteriors.astype(np.float128)
@@ -175,10 +170,9 @@ def calculate_phred(joint_probabilities):
 	# if the max posterior shows fetal gt of 0, then phred = -10*log(P(gt is 1) + P(gt is 2)) = -10log(1 - P(gt is 0))
 	# if the max posterior shows fetal gt of either 1 or 2, then phred = -10*log(1 - (P(gt is 1) + P(gt is 2))) = -10log(P(gt is 0))
 
-	if use_decimal:
-		phred = float(-10*(np.log10(1 - posteriors.max())))
-	else:
-		phred = float(-10*(np.log10(1 - np.max(posteriors))))
+	phred = float(-10*(np.log10(1 - posteriors.max())))
+
+        return phred
 
 def calculate_posteriors(var_priors, var_likelihoods):
 	# Convert to numeric values just in case
