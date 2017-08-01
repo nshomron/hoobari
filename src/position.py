@@ -34,49 +34,23 @@ def calculate_priors(maternal_gt, paternal_gt):
 	==>
 	[0.5f, 0.5, 0.5(1-f)]
 	'''
+	
 	if (maternal_gt in (0,1,2)) and (paternal_gt in (0,1,2)):
 		p_maternal_alt = maternal_gt / 2
 		p_paternal_alt = paternal_gt / 2
-		priors_source = 'parents_vcf'
 		priors = [	(1-p_maternal_alt)*(1-p_paternal_alt),
 				p_maternal_alt*(1-p_paternal_alt) + (1-p_maternal_alt)*p_paternal_alt,
 				p_maternal_alt*p_paternal_alt]
 
 		for i in range(len(priors)):
 			if priors[i] == 0:
-				priors[i] = np.log(0.000000012) # TODO: None or some very small value/s?
+				priors[i] = np.log(0.000000012) # TODO: None or some very small value/s? check which is more accurate
 			else:
 				priors[i] = np.log(priors[i])
-
-	# elif not maternal_gt and not paternal_gt:
-	# 	priors = [0.25, 0.5, 0.25]
-	# 	priors_source = 'naive'		
-	# elif not maternal_gt:
-	# 	p_paternal_alt = paternal_gt / 2
-	# 	p_maternal_alt = 0.5
-	# 	priors_source = 'only_paternal'
-	# elif not paternal_gt:
-	# 	p_maternal_alt = maternal_gt / 2
-	# 	priors_source = 'only_maternal'
-	elif (maternal_gt == 'unsupported') or (paternal_gt == 'unsupported'):
-		priors = 'more than one alternate allele, not yet supported'
-		priors_source = 'unsupported'
 	else:
-		priors = [None, None, None]
-		priors_source = 'no_priors'
-	# if priors_source != 'naive':
+		priors = None
 
-	# else:
-	# 	get maf or af or ldaf
-	# 	maf = retrieve_maf_from_ensembl(variant_name)
-	# 	if maf[1] is not None:
-	# 		p_maternal_alt = p_paternal_alt = maf[1]
-	# 		priors_source = maf[0]
-
-
-
-
-	return (priors, priors_source)
+	return priors
 
 def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 	'''
@@ -197,7 +171,7 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# Convert to numeric values just in case
 	#var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
 	var_priors, var_likelihoods = np.array(var_priors, dtype = np.float), np.array(var_likelihoods, dtype = np.float)
-	printverbose(var_priors, var_likelihoods)
+	printverbose(var_priors, var_likelihoods, sep = '\n')
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),
 	# take only likelihoods

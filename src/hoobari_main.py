@@ -90,21 +90,22 @@ vcf_out.make_header(	cfdna_reader,
 
 co_reader = vcf.utils.walk_together(cfdna_reader, parents_reader)
 for tup in co_reader:
+	if (tup[0] is None) or (tup[1] is None):
+		print(tup)
 	joint_probabilities = prediction = phred = probabilities_source = None
 
 	cfdna_rec, parents_rec = tup
 	
 	if parents_rec:
 		if cfdna_rec:
-			variant_name = vcfuid.rec_to_uid(cfdna_rec)
-			
+		
 			# calculate priors
 			maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data.GT)
 			paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
-			priors, priors_source = position.calculate_priors(maternal_gt, paternal_gt)
+			priors = position.calculate_priors(maternal_gt, paternal_gt)
 			
 
-			if priors_source != 'unsupported':
+			if maternal_gt in (0,1,2):
 
 				# calculate likelihoods
 				likelihoods = position.calculate_likelihoods(	cfdna_rec,

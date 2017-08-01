@@ -46,7 +46,7 @@ def print_info_or_format_row(info_or_format, field_id, number, field_type, descr
 	
 def printvcf(x, *args, out_path = False, **kargs):
 	if out_path:
-		with open(out_path, 'w') as f:
+		with open(out_path, 'a') as f:
 			print(x, file = f, *args, **kargs)
 	else:
 		print(x, *args, **kargs)
