@@ -17,6 +17,7 @@ import parse_gt
 from stderr import *
 import vcfuid
 
+
 # --------- functions ----------
 def calculate_priors(maternal_gt, paternal_gt):
 
@@ -196,7 +197,7 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# Convert to numeric values just in case
 	#var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
 	var_priors, var_likelihoods = np.array(var_priors, dtype = np.float), np.array(var_likelihoods, dtype = np.float)
-	print(var_priors, var_likelihoods)
+	printverbose(var_priors, var_likelihoods)
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),
 	# take only likelihoods
