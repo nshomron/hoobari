@@ -31,7 +31,7 @@ Explanation:
 '''
 
 # Initiate variants database
-vardb=db.Variants(args.drop_db,path=args.tmp_dir)
+vardb=db.Variants(args.drop_db,dbpath=args.tmp_dir)
 
 chromosomes = ['chr' + str(i) for i in list(range(1,23)) + ['X']]
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
@@ -61,5 +61,5 @@ for line in stdin:
 		position_list.append([geno, math.fabs(isize), qname])
 
 	elif line.startswith('finished position'):
-		vardb.insertVariants(position_list,chrom.replace('chr',''),int(position))
+		vardb.insertVariants(chrom.replace('chr',''), int(position), position_list)
 		initiate_json = True

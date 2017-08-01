@@ -13,7 +13,7 @@ import argparse
 from multiprocessing import Pool, cpu_count
 from decimal import Decimal, getcontext
 getcontext().prec = 10000
-# project's
+# project'si
 import parse_gt
 from stderr import printerr
 import vcfuid
