@@ -12,7 +12,7 @@ from functools import partial
 from json_commands import *
 from pkl_commands import *
 import parse_gt
-from stderr import printerr
+from stderr import *
 import vcfuid
 
 

@@ -3,7 +3,7 @@ import vcf
 import parse_gt
 import sys
 from time import strftime
-from stderr import printerr
+from stderr import *
 
 info_dic = OrderedDict([('PARENTS_FORMAT', {	'num': '.',
 						'type': 'String',
@@ -21,7 +21,7 @@ info_dic = OrderedDict([('PARENTS_FORMAT', {	'num': '.',
 						'type': 'Float',
 						'desc': 'Parental samples QUAL score',
 						'source': 'parental vcf'}),
-			('PROB_SOURCE', {	'num': '',
+			('PROB_SOURCE', {	'num': '.',
 						'type': 'String',
 						'desc': 'Whether the probabilities for the calculations are only the posteriors, only the likelihoods, or joint',
 						'source': 'hoobari'})])
@@ -58,12 +58,12 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 		printerr('cfDNA:', str(cfdna_vcf_reader.metadata['reference']))
 		printerr('parental:', str(parents_vcf_reader.metadata['reference']))
 	if cfdna_vcf_reader.contigs != parents_vcf_reader.contigs:
-		printerr(	'Warning! cfdna and parental vcf files have different contigs')
+		printerr('Warning! cfdna and parental vcf files have different contigs')
 		printerr('cfDNA:', str(cfdna_vcf_reader.contigs))
 		printerr('parental:', str(parents_vcf_reader.contigs))
 
 	# print unique header fields
-	printvcf(	'##fileFormat=' + cfdna_vcf_reader.metadata['fileformat'],
+	printvcf(	'##fileformat=' + cfdna_vcf_reader.metadata['fileformat'],
 			'##fileDate=' + strftime('%Y%m%d'),
 			'##source=hoobari',
 			'##phasing=none', # phasing is not yet supported
@@ -79,15 +79,7 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 	printvcf('\n'.join(cfdna_contigs_output), out_path = output_path)
 
 
-	# print info header fields
-	for k in info_dic:
-		print_info_or_format_row(	'INFO',
-						k,
-						info_dic[k]['num'],
-						info_dic[k]['type'],
-						info_dic[k]['desc'],
-						info_dic[k]['source'],
-						output_path = output_path)
+	# TODO: print filter header fields from parents
 
 	# print format header fields
 	cfdna_infos_names = [i[0] for i in cfdna_vcf_reader.formats.values()]
@@ -116,6 +108,16 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 			k_source = 'hoobari'
 		
 		print_info_or_format_row(k_class, k_id, k_num, k_type, k_desc, source = k_source, output_path = output_path)
+
+	# print info header fields
+	for k in info_dic:
+		print_info_or_format_row(	'INFO',
+						k,
+						info_dic[k]['num'],
+						info_dic[k]['type'],
+						info_dic[k]['desc'],
+						info_dic[k]['source'],
+						output_path = output_path)
 
 	# print column names
 	vcf_columns = ['#CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT'] + [fetal_sample_name]

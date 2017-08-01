@@ -14,7 +14,7 @@ from multiprocessing import Pool, cpu_count
 import ctypes
 # project's
 import parse_gt
-from stderr import printerr
+from stderr import *
 import vcfuid
 
 # --------- functions ----------
@@ -43,7 +43,7 @@ def calculate_priors(maternal_gt, paternal_gt):
 
 		for i in range(len(priors)):
 			if priors[i] == 0:
-				priors[i] = None # TODO: really none or some very small value/s?
+				priors[i] = np.log(0.000000012) # TODO: None or some very small value/s?
 			else:
 				priors[i] = np.log(priors[i])
 
@@ -57,6 +57,9 @@ def calculate_priors(maternal_gt, paternal_gt):
 	# elif not paternal_gt:
 	# 	p_maternal_alt = maternal_gt / 2
 	# 	priors_source = 'only_maternal'
+	elif (maternal_gt == 'unsupported') or (paternal_gt == 'unsupported'):
+		priors = 'more than one alternate allele, not yet supported'
+		priors_source = 'unsupported'
 	else:
 		priors = [None, None, None]
 		priors_source = 'no_priors'
@@ -168,29 +171,24 @@ def calculate_phred(joint_probabilities):
 	return libphred.calculatePhred(cdubs)
 
 def simple_phred_calculation(joint_probabilities, predicted_genotype):
-	# print(joint_probabilities)
-	# print(joint_probabilities.dtype)
 	joint_probabilities_normalized = joint_probabilities - np.min(joint_probabilities[np.isfinite(joint_probabilities)])
-	# print(joint_probabilities_normalized)
-	# print(joint_probabilities_normalized.dtype)
 	exp_joint_probabilities = np.exp(joint_probabilities_normalized)
-	# print(exp_joint_probabilities)
-	# print(exp_joint_probabilities.dtype)
 	exp_joint_probabilities[np.isnan(exp_joint_probabilities)] = 0
-	# print(exp_joint_probabilities)
-	# print(exp_joint_probabilities.dtype)
 	sum_exp_joint_probabilities = exp_joint_probabilities.sum()
-	# print(sum_exp_joint_probabilities)
 	posteriors = np.asarray((exp_joint_probabilities / sum_exp_joint_probabilities), dtype = np.float)
-	# print(posteriors)
-	# print(posteriors.dtype)
+	#print((int(exp_joint_probabilities[predicted_genotype])) / int(sum_exp_joint_probabilities))
+	max_posterior = int(exp_joint_probabilities[predicted_genotype]) / int(sum_exp_joint_probabilities)
+
 
 	# if predicted_genotype == 0:
 	# 	phred = -10 * np.log10(1-posteriors[0])
 	# elif predicted_genotype in (1, 2):
 	# 	phred = -10 * np.log10(posteriors[0])
 
-	phred = -10 * np.log10(1-posteriors[predicted_genotype])
+	phred = -10 * np.log10(posteriors[0])
+
+	if np.isinf(phred):
+		phred = 99999
 
 	return phred
 
@@ -198,6 +196,7 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# Convert to numeric values just in case
 	#var_priors, var_likelihoods = pd.to_numeric(var_priors), pd.to_numeric(var_likelihoods)
 	var_priors, var_likelihoods = np.array(var_priors, dtype = np.float), np.array(var_likelihoods, dtype = np.float)
+	print(var_priors, var_likelihoods)
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),
 	# take only likelihoods
@@ -215,10 +214,10 @@ def calculate_posteriors(var_priors, var_likelihoods):
 			probabilities_source = 'none'
 			
 	if joint_probabilities is not None:
-		joint_probabilities[np.isnan(joint_probabilities)] = -np.inf
+		joint_probabilities[np.isnan(joint_probabilities)] = -999
 		prediction = joint_probabilities.argmax()
 		# phred = calculate_phred(joint_probabilities)
-		phred = simple_phred_calculation(joint_probabilities, prediction)
-		# phred = 300
+		# phred = simple_phred_calculation(joint_probabilities, prediction)
+		phred = 300
 
 	return (joint_probabilities, prediction, phred, probabilities_source)

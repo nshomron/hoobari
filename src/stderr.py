@@ -1,4 +1,4 @@
 from sys import stderr
 
 def printerr(output_to_print, *args, **kargs):
-	print('[pre-processing]', output_to_print, file = stderr, *args, **kargs)
+	print(output_to_print, file = stderr, sep = '\t', *args, **kargs)

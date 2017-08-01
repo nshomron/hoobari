@@ -6,15 +6,19 @@ import pandas as pd
 import numpy as np
 import vcf
 # project's
-from stderr import printerr
+from stderr import *
 import vcfuid
 import pprogress
 from pkl_commands import *
+
 def str_to_int(gt):
 	if gt is not None and gt is not '.':
 		gt_split = gt.split('/')
 		gt_sum = int(gt_split[0]) + int(gt_split[1])
-		return gt_sum
+		if gt_sum in (0,1,2):
+			return gt_sum
+		else:
+			return 'unsupported'
 	else:
 		return None
 

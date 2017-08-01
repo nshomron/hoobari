@@ -1,4 +1,4 @@
-from stderr import printerr
+from stderr import *
 import subprocess
 
 def reset():
