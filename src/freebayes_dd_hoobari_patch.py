@@ -7,12 +7,13 @@ import os
 import math
 import pysam
 import argparse
-from json_commands import *
+import db
 
 # --------- parse args ---------
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--bam_file")
-parser.add_argument("-t", "--tmp_dir")
+parser.add_argument("-t", "--tmp_dir", default = 'tmp_hb')
+parser.add_argument("-f", "--drop_db", action = 'store_true', help = 'override variants database')
 args = parser.parse_args()
 # ------------------------------
 
@@ -29,21 +30,18 @@ Explanation:
 3) the tmp_folder created here is the same one you should later use when you run hoobari
 '''
 
-
-out_dir = os.path.join(args.tmp_dir, 'jsons')
-os.makedirs(out_dir, exist_ok=True)
-chromosomes = ['chr' + str(i) for i in list(range(1,23)) + ['X']]
-[os.makedirs(os.path.join(out_dir, c), exist_ok=True) for c in chromosomes]
+# Initiate variants database
+vardb = db.Variants(args.drop_db, dbpath = args.tmp_dir)
 
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 
 for line in stdin:
-	
+
 	if line.startswith('position: '):
 		initiate_json = True
 		line = line.split()
 		var = line[1]
-				
+
 	elif line.startswith('haplo_obs'):
 		if initiate_json:
 			chrom, position = var.split(':')
@@ -51,8 +49,6 @@ for line in stdin:
 			template_lengths_at_position_dic = {}
 			for rec in bam_records_at_position:
 				template_lengths_at_position_dic[rec.query_name] = rec.template_length
-			
-			position_file_path = os.path.join(out_dir, chrom, position + '.json')
 			position_list = []
 			initiate_json = False
 
@@ -64,5 +60,7 @@ for line in stdin:
 		position_list.append([geno, math.fabs(isize), qname])
 
 	elif line.startswith('finished position'):
-		json_dump(position_list, position_file_path)
+		vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
 		initiate_json = True
+
+vardb.close()
