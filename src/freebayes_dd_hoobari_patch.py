@@ -12,8 +12,8 @@ import db
 # --------- parse args ---------
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--bam_file")
-parser.add_argument("-t", "--tmp_dir")
-parser.add_argument("-f", "--drop_db", action='store_true')
+parser.add_argument("-t", "--tmp_dir", default = 'tmp_hb')
+parser.add_argument("-f", "--drop_db", action = 'store_true', help = 'override variants database')
 args = parser.parse_args()
 # ------------------------------
 
@@ -31,9 +31,8 @@ Explanation:
 '''
 
 # Initiate variants database
-vardb=db.Variants(args.drop_db,dbpath=args.tmp_dir)
+vardb = db.Variants(args.drop_db, dbpath = args.tmp_dir)
 
-chromosomes = ['chr' + str(i) for i in list(range(1,23)) + ['X']]
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 
 for line in stdin:
@@ -61,5 +60,7 @@ for line in stdin:
 		position_list.append([geno, math.fabs(isize), qname])
 
 	elif line.startswith('finished position'):
-		vardb.insertVariants(chrom.replace('chr',''), int(position), position_list)
+		vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
 		initiate_json = True
+
+vardb.close()
