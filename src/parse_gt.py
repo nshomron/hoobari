@@ -6,20 +6,19 @@ import pandas as pd
 import numpy as np
 import vcf
 # project's
-from stderr import *
+from stderr import printerr
 import vcfuid
 import pprogress
 from pkl_commands import *
 
-def str_to_int(str_gt):
-	if str_gt in ('0/0', '0/1', '1/1'):
-		gt = int(str_gt[0]) + int(str_gt[2])
-	elif str_gt == '.':
-		gt = None
-	else:
-		gt = 'unsupported'
 
-	return gt
+def str_to_int(gt):
+	if gt is not None and gt is not '.':
+		gt_split = gt.split('/')
+		gt_sum = int(gt_split[0]) + int(gt_split[1])
+		return gt_sum
+	else:
+		return None
 
 def int_to_str(gt):
 	if gt == 0:
