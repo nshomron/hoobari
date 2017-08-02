@@ -10,6 +10,8 @@ from stderr import printerr
 import vcfuid
 import pprogress
 from pkl_commands import *
+
+
 def str_to_int(gt):
 	if gt is not None and gt is not '.':
 		gt_split = gt.split('/')
