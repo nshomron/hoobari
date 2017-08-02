@@ -112,11 +112,10 @@ for tup in co_reader:
 				# calculate likelihoods
 				likelihoods = position.calculate_likelihoods(	cfdna_rec,
 										maternal_gt,
-										args.tmp_dir,
 										total_fetal_fraction,
 										fetal_fractions_df,
 										err_rate,
-										known_fetal_frags_dic,
+										conn,
 										args.model)
 
 				# calculate posteriors
