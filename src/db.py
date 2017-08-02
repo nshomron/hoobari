@@ -15,11 +15,12 @@ class Variants(object):
         res = self.con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='variants';")
         
         if not res.fetchone():
-            self.con.execute('CREATE TABLE `variants` (`chromosome` char(2) DEFAULT NULL,`pos` int(10) NOT NULL,`genotype` char(1) DEFAULT NULL,`length` int(10) DEFAULT NULL,`qname` varchar(50) DEFAULT NULL)')
+            self.con.execute('CREATE TABLE `variants` (`chromosome` char(2) DEFAULT NULL,`pos` int(10) NOT NULL,`genotype` varchar(20) DEFAULT NULL,`length` int(10) DEFAULT NULL,`qname` varchar(50) DEFAULT NULL)')
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):
-        query='''
+        
+        query = '''
             INSERT INTO `variants`
             (`chromosome`,
             `pos`,
@@ -28,9 +29,11 @@ class Variants(object):
             `qname`)
             VALUES
             '''
+        
         for line in info_list:
-            query+='({0},"{1}","{2}",{3},"{4}"),'.format(chromosome,
-                    position, line[0], line[1], line[2])
+            query += '("{0}",{1},"{2}",{3},"{4}"),'.format(chromosome,
+                        position, line[0], line[1], line[2])
+        
         query = query[:-1] + ';'
         self.con.execute(query)
         self.con.commit()

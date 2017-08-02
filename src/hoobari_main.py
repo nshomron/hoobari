@@ -5,6 +5,7 @@ import os
 import sys
 import subprocess
 import requests
+import sqlite3
 import vcf, vcf.utils
 import numpy as np
 import pandas as pd
@@ -32,6 +33,7 @@ parser.add_argument("-parents_vcf", "--parents_vcf", help = 'The maternal plasma
 parser.add_argument("-cfdna_vcf", "--cfdna_vcf", help = 'The maternal plasma cfDNA VCF file')
 parser.add_argument("-t", "--tmp_dir", default = os.path.join(os.getcwd(), 'tmp_hb'), help = 'Directory for temporary files')
 parser.add_argument("-o", "--vcf_output", default = False, help = 'path for vcf output')
+parser.add_argument("-db", "--db_path", default = os.path.join(os.getcwd(), 'tmp_hb', 'hoobari.db'), help = 'path for vcf output')
 parser.add_argument("-pkl", "--preprocessing_pkl_path", default = False, help = 'path to load preprocessing data from')
 parser.add_argument("-model", "--model", default = 'simple', help = '	model for likelihoods calculation. possible values: "simple" \
 									(Bayesian model based only on fetal fraction and parental genotypes), \
@@ -42,6 +44,7 @@ parser.add_argument("-model", "--model", default = 'simple', help = '	model for 
 args = parser.parse_args()
 
 # --------- pre-processing ----------
+conn = sqlite3.connect(args.db_path)
 
 if not args.preprocessing_pkl_path:
 	err_rate = 0.0003

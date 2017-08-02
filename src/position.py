@@ -6,6 +6,7 @@ import sys
 import subprocess
 import requests
 import vcf
+import sqlite3
 import numpy as np
 import pandas as pd
 from json_commands import *
@@ -92,11 +93,10 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 def calculate_likelihoods(
 	rec,
 	maternal_gt,
-	tmp_dir,
 	total_fetal_fraction,
 	fetal_fractions_df,
 	err_rate,
-	known_fetal_qnames_dic,
+	sql_connection,
 	model,
 	**kwargs):
 
@@ -108,12 +108,10 @@ def calculate_likelihoods(
 	'''
 
 	chrom, pos, ref, alt = rec.CHROM, str(rec.POS), rec.REF, str(rec.ALT[0])
-	chrom_pos = str(chrom) + ':' + str(pos)
 
 	variant_len = len(ref) - len(alt)
 
-	snp_json_path = os.path.join(tmp_dir, 'jsons', chrom + '_snps', chrom_pos + '.json')
-	pos_data = pd.DataFrame(json_load(snp_json_path))
+	pos_data = pd.read_sql_query("select genotype, length, qname from variants where chromosome='" + chrom + "' and pos='" + pos + "';", conn)
 
 	if pos_data is not None:
 
