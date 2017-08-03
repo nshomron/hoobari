@@ -31,12 +31,10 @@ Explanation:
 '''
 
 # Initiate variants database
-vardb = db.Variants(args.drop_db, dbpath = args.tmp_dir)
-
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 
 for line in stdin:
-
+	
 	if line.startswith('position: '):
 		initiate_json = True
 		line = line.split()
@@ -60,7 +58,7 @@ for line in stdin:
 		position_list.append([geno, math.fabs(isize), qname])
 
 	elif line.startswith('finished position'):
+		vardb = db.Variants(args.drop_db, dbpath = args.tmp_dir)
 		vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
+		vardb.con.close()
 		initiate_json = True
-
-vardb.close()
