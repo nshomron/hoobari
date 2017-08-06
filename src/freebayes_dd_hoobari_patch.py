@@ -50,12 +50,9 @@ def is_fetal_ref(maternal_gt, paternal_gt):
 	elif maternal_gt == '1/1' and paternal_gt in ('0/0','0/1'):
 		return True
 
-def is_fetal_fragment(geno, vcf_var_line, is_fetal_ref = False):
+def is_fetal_fragment(genotype, ref, alt, is_fetal_ref = False):
 	
-	print('is_fetal_ref: ' + str(is_fetal_ref))
-	ref, alt = vcf_var_line.split('\t')[4:6]
-
-	if ((geno == ref) and is_fetal_ref) or ((geno == alt) and not is_fetal_ref):
+	if ((genotype == ref) and is_fetal_ref) or ((genotype == alt) and not is_fetal_ref):
 		return 1
 	else:
 		return 0
@@ -76,8 +73,11 @@ def get_var_type(vcf_line):
 		return 0
 
 def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type):
-	if (maternal_gt == '0/0' and paternal_gt == '1/1') or (maternal_gt == '1/1' and paternal_gt == '0/0'):
-		return 1
+	if var_type == 1: # snps only
+		if (maternal_gt == '0/0' and paternal_gt == '1/1') or (maternal_gt == '1/1' and paternal_gt == '0/0'):
+			return 1
+		else:
+			return 0
 	else:
 		return 0
 
@@ -110,6 +110,11 @@ for line in stdin:
 	elif line.startswith('haplo_obs'):
 		if initiate_var:
 			chrom, position = var.split(':')
+			maternal_gt, paternal_gt = get_parental_genotypes(	parents_reader,
+										args.maternal_sample_name,
+										args.paternal_sample_name,
+										chrom,
+										position)
 			template_lengths_at_position_dic = get_reads_tlen(bam_reader, chrom, position)
 			position_list = []
 			initiate_var = False
@@ -123,17 +128,14 @@ for line in stdin:
 
 	elif line.startswith('finished position'):
 		if not initiate_var:
-			maternal_gt, paternal_gt = get_parental_genotypes(	parents_reader,
-										args.maternal_sample_name,
-										args.paternal_sample_name,
-										chrom,
-										position)
-			
-			is_fetal = is_fetal_fragment(geno, former_line, is_fetal_ref = is_fetal_ref(maternal_gt, paternal_gt))
 			var_type = get_var_type(former_line)
 			for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type)
+			ref, alt = former_line.split('\t')[3:5]
 
 			for l in position_list:
+				genotype = l[0]
+				print (genotype, ref, alt)
+				is_fetal = is_fetal_fragment(genotype, ref, alt, is_fetal_ref = is_fetal_ref(maternal_gt, paternal_gt))
 				l += [is_fetal, var_type, for_ff]
 
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
