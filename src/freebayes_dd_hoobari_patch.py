@@ -10,6 +10,7 @@ import pysam
 import vcf
 import db
 import argparse
+import pandas as pd
 
 # --------- parse args ---------
 parser = argparse.ArgumentParser()
@@ -57,6 +58,7 @@ def is_fetal_fragment(genotype, ref, alt, fetal_ref = False):
 	else:
 		return 0
 
+
 def get_var_type(vcf_line):
 	var_type = re.findall('TYPE=(.*);', vcf_line)[0]
 	if var_type == 'snp':
@@ -80,6 +82,12 @@ def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type):
 			return 0
 	else:
 		return 0
+
+def update_known_fetal_fragments(position_list, db_connection):
+	for l in position_list:
+		query_name = l[2]
+		if int(pd.read_sql_query("SELECT sum(is_fetal) FROM variants WHERE qname='" + query_name + "';", vardb.con).iloc[0,0]) > 0:
+			vardb.con.execute("UPDATE variants SET is_fetal=1 WHERE qname='" + query_name + "';")
 
 
 '''
@@ -134,15 +142,19 @@ for line in stdin:
 
 			for l in position_list:
 				genotype = l[0]
-				is_fetal = is_fetal_fragment(genotype, ref, alt, is_fetal_ref = is_fetal_ref(maternal_gt, paternal_gt))
+				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_ref = is_fetal_ref(maternal_gt, paternal_gt))
 				l += [is_fetal, var_type, for_ff]
 
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
+			update_known_fetal_fragments(position_list, vardb.con)
 			initiate_var = True
-	
+
 	former_line = line
 
 
 bam_reader.close()
 vardb.con.commit()
 vardb.con.close()
+
+
+# TODO: when the db is complete - each qname where is_fetal=1, all appearances of this qname in the db will change to 1
