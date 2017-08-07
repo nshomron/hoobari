@@ -50,9 +50,9 @@ def is_fetal_ref(maternal_gt, paternal_gt):
 	elif maternal_gt == '1/1' and paternal_gt in ('0/0','0/1'):
 		return True
 
-def is_fetal_fragment(genotype, ref, alt, is_fetal_ref = False):
+def is_fetal_fragment(genotype, ref, alt, fetal_ref = False):
 	
-	if ((genotype == ref) and is_fetal_ref) or ((genotype == alt) and not is_fetal_ref):
+	if ((genotype == ref) and fetal_ref) or ((genotype == alt) and not fetal_ref):
 		return 1
 	else:
 		return 0
@@ -134,7 +134,6 @@ for line in stdin:
 
 			for l in position_list:
 				genotype = l[0]
-				print (genotype, ref, alt)
 				is_fetal = is_fetal_fragment(genotype, ref, alt, is_fetal_ref = is_fetal_ref(maternal_gt, paternal_gt))
 				l += [is_fetal, var_type, for_ff]
 
