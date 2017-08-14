@@ -74,21 +74,17 @@ def get_var_type(vcf_line):
 	else:
 		return 0
 
-def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type):
-	if var_type == 1: # snps only
-		if (maternal_gt == '0/0' and paternal_gt == '1/1') or (maternal_gt == '1/1' and paternal_gt == '0/0'):
+def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal):
+	var_in_ff_positions = (maternal_gt == '0/0' and paternal_gt == '1/1') or (maternal_gt == '1/1' and paternal_gt == '0/0')
+	var_is_snp = var_type == 1
+	
+	if var_in_ff_positions and var_is_snp:
+		if is_fetal == 1:
 			return 1
-		else:
-			return 0
+		elif is_fetal == 0:
+			return 2
 	else:
 		return 0
-
-def update_known_fetal_fragments(position_list, db_connection):
-	for l in position_list:
-		query_name = l[2]
-		if int(pd.read_sql_query("SELECT sum(is_fetal) FROM variants WHERE qname='" + query_name + "';", vardb.con).iloc[0,0]) > 0:
-			vardb.con.execute("UPDATE variants SET is_fetal=1 WHERE qname='" + query_name + "';")
-
 
 '''
 This patch uses freebayes' algorithm to create a folders' tree: tmp_folder/jsons/chr[1-22,X,Y].
@@ -101,6 +97,11 @@ Explanation:
 1) freebayes has to be run with -dd flag, which print more verbose debugging output (and requires "make DEBUG" for installation)
 2) Since freebayes' debug information is written to stderr, 2>&1 redirects it to stdout in order to pipe it
 3) the tmp_folder created here is the same one you should later use when you run hoobari
+
+1 - var_type - 5 + null
+2 - is_fetal - 0/1
+3 - ff - 0, 1, 2 (2 + null)
+
 '''
 
 # Initiate variants database
@@ -137,16 +138,15 @@ for line in stdin:
 	elif line.startswith('finished position'):
 		if not initiate_var:
 			var_type = get_var_type(former_line)
-			for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type)
 			ref, alt = former_line.split('\t')[3:5]
 
 			for l in position_list:
 				genotype = l[0]
 				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_ref = is_fetal_ref(maternal_gt, paternal_gt))
+				for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
 				l += [is_fetal, var_type, for_ff]
 
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
-			update_known_fetal_fragments(position_list, vardb.con)
 			initiate_var = True
 
 	former_line = line
@@ -158,3 +158,7 @@ vardb.con.close()
 
 
 # TODO: when the db is complete - each qname where is_fetal=1, all appearances of this qname in the db will change to 1
+# TODO: problem! needs to know also if fetal only by genotype (not by other fragments) - 
+# for_ff_fetal, for_ff_shared
+
+
