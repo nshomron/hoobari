@@ -21,23 +21,11 @@ parser.add_argument("-parents_vcf", "--parents_vcf", help = 'bgzipped vcf of par
 parser.add_argument("-m", "--maternal_sample_name", help = 'maternal sample name as appears in parents vcf')
 parser.add_argument("-p", "--paternal_sample_name", help = 'paternal sample name as appears in parents vcf')
 parser.add_argument("-f", "--drop_db", action = 'store_true', help = 'override variants database')
-parser.add_argument("-mysql", "--mysql", default = 'tomr@nshomron.tau.ac.il/var/opt/rocks/mysql/mysql.sock:40000', help = 'sqlserver connection information')
 parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name')
 args = parser.parse_args()
 # ------------------------------
 
 # --------- functions ---------
-# def connect_db(mysql_info, db_name, drop_db = args.drop_db):
-	
-# 	first_split = mysql_info.split(':')
-# 	port = int(first_split[1])
-# 	user, host, socket = re.split(r'@|/', first_split[0], 2)
-# 	socket = '/' + socket
-# 	con = db.Variants(dropdb = args.drop_db, host = host, db = db_name, user = user, socket = socket, port = port)
-
-# 	return con
-	
-
 def get_parental_genotypes(parents_reader, maternal_sample_name, paternal_sample_name, chrom, position):
 	n_rec = 0
 	for rec in parents_reader.fetch(chrom, int(position) - 1, int(position)):
@@ -124,8 +112,7 @@ Explanation:
 # Initiate variants database
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 parents_reader = vcf.Reader(filename = args.parents_vcf)
-#vardb = db.Variants(args.drop_db, dbpath = os.path.join(args.tmp_dir, 'hoobari.' + str(args.region) + '.db'))
-vardb = db.Variants(args.mysql, args.db)
+vardb = db.Variants(args.drop_db, dbpath = os.path.join(args.tmp_dir, args.bam_file, args.db + '.' + str(args.region) + '.db'))
 
 for line in sys.stdin:
 	
