@@ -112,7 +112,11 @@ Explanation:
 # Initiate variants database
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 parents_reader = vcf.Reader(filename = args.parents_vcf)
-vardb = db.Variants(args.drop_db, dbpath = os.path.join(args.tmp_dir, args.bam_file, args.db + '.' + str(args.region) + '.db'))
+if args.region:
+	dbpath = os.path.join(args.tmp_dir, args.db + '.' + str(args.region) + '.db')
+else:
+	dbpath = os.path.join(args.tmp_dir, args.db + '.db')
+vardb = db.Variants(dbpath = dbpath)
 
 for line in sys.stdin:
 	

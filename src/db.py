@@ -21,14 +21,13 @@ class Variants(object):
         if not res.fetchone():
             self.con.execute(   '''CREATE TABLE IF NOT EXISTS `variants`(
                                 `chromosome` char(2) DEFAULT NULL,
-                                `pos` int(10) unsigned NOT NULL,
+                                `pos` int(10) NOT NULL,
                                 `genotype` varchar(50) DEFAULT NULL,
                                 `length` int(10) DEFAULT NULL,
                                 `qname` varchar(50) DEFAULT NULL,
                                 `is_fetal` tinyint(1) DEFAULT NULL,
                                 `var_type` tinyint(1) DEFAULT NULL,
-                                `for_ff` tinyint(1) DEFAULT NULL,
-                                UNIQUE(genotype,pos,chromosome,qname))''')
+                                `for_ff` tinyint(1) DEFAULT NULL)''')
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):
