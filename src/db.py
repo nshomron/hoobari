@@ -1,16 +1,17 @@
 import pymysql as mysql
 import csv
 from sys import stderr
+from re import split as resplit
 
 class Variants(object):
-    def __init__(self, dropdb=False, host='nshomron.tau.ac.il', db='hoobari',user='guyshapira', socket='/var/opt/rocks/mysql/mysql.sock', port=40000):
+    def __init__(self, mysql_info, db_name, dropdb=False):
         # Connect to DB
-        self.con = mysql.connect(host = host, user = user, port = port, database = db, unix_socket = socket)
+        self.con = self.ConnectDB(mysql_info, db_name)
         self.cur = self.con.cursor()
 
         # Create database if there isn't one already
-        self.cur.execute('CREATE DATABASE IF NOT EXISTS {0}'.format(db))
-        self.con.select_db(db)
+        self.cur.execute('CREATE DATABASE IF NOT EXISTS {0}'.format(db_name))
+        self.con.select_db(db_name)
 
         # Drop existing table if needed
         if dropdb:
@@ -32,6 +33,17 @@ class Variants(object):
 
         # Commit changes
         self.con.commit()
+
+    def ConnectDB(self, mysql_info, db_name):
+    
+        first_split = mysql_info.split(':')
+        port = int(first_split[1])
+        user, host, socket = resplit(r'@|/', first_split[0], 2)
+        socket = '/' + socket
+        
+        connection = mysql.connect(host = host, user = user, port = port, database = db_name, unix_socket = socket)
+
+        return connection
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):

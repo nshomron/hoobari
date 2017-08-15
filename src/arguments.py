@@ -12,6 +12,9 @@ parser.add_argument("-t", "--tmp_dir", default = os.path.join(os.getcwd(), 'tmp_
 parser.add_argument("-o", "--vcf_output", default = False, help = 'path for vcf output')
 parser.add_argument("-r", "--region", default = False, help = "run on a specific region as explained in pyvcf documentation")
 parser.add_argument("-v", "--verbosity", action = 'store_true', help = "Prints more detailed debugging information")
+parser.add_argument("-dbt", "--dbtype", default = 'mysql', help = 'mysql or sqlite')
+parser.add_argument("-mysql", "--mysql", default = 'tomr@nshomron.tau.ac.il/var/opt/rocks/mysql/mysql.sock:40000', help = 'sqlserver connection information - user@host/path/to/socket.sock:port')
+parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name if mySQL or db path if SQLite')
 parser.add_argument("-model", "--model", default = 'simple', help = '	model for likelihoods calculation. possible values: "simple" \
 									(Bayesian model based only on fetal fraction and parental genotypes), \
 									"lengths" (use different fetal fraction per fragment length), \

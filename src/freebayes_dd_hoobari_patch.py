@@ -27,15 +27,15 @@ args = parser.parse_args()
 # ------------------------------
 
 # --------- functions ---------
-def connect_db(mysql_info, db_name, drop_db = args.drop_db):
+# def connect_db(mysql_info, db_name, drop_db = args.drop_db):
 	
-	first_split = mysql_info.split(':')
-	port = int(first_split[1])
-	user, host, socket = re.split(r'@|/', first_split[0], 2)
-	socket = '/' + socket
-	con = db.Variants(dropdb = args.drop_db, host = host, db = db_name, user = user, socket = socket, port = port)
+# 	first_split = mysql_info.split(':')
+# 	port = int(first_split[1])
+# 	user, host, socket = re.split(r'@|/', first_split[0], 2)
+# 	socket = '/' + socket
+# 	con = db.Variants(dropdb = args.drop_db, host = host, db = db_name, user = user, socket = socket, port = port)
 
-	return con
+# 	return con
 	
 
 def get_parental_genotypes(parents_reader, maternal_sample_name, paternal_sample_name, chrom, position):
@@ -58,15 +58,17 @@ def get_reads_tlen(bam_reader, chrom, position):
 		tlen_at_position_dic[rec.query_name] = math.fabs(int(rec.template_length))
 	return tlen_at_position_dic
 
-def is_fetal_ref(maternal_gt, paternal_gt):
+def get_fetal_allele_type(maternal_gt, paternal_gt):
 	if maternal_gt == '0/0' and paternal_gt in ('0/1','1/1'):
-		return False
+		return 'alt'
 	elif maternal_gt == '1/1' and paternal_gt in ('0/0','0/1'):
-		return True
+		return 'ref'
+	else:
+		return False
 
-def is_fetal_fragment(genotype, ref, alt, fetal_ref = False):
+def is_fetal_fragment(genotype, ref, alt, fetal_allele = False):
 	
-	if ((genotype == ref) and fetal_ref) or ((genotype == alt) and not fetal_ref):
+	if ((genotype == ref) and fetal_allele == 'ref') or ((genotype == alt) and fetal_allele == 'alt'):
 		return 1
 	else:
 		return 0
@@ -74,6 +76,16 @@ def is_fetal_fragment(genotype, ref, alt, fetal_ref = False):
 
 def get_var_type(alleles_dic):
 	
+	'''
+	code	type
+	----	----
+	1	snp
+	2	mnp 
+	3	insertion
+	4	deletion
+	5	complex
+	'''
+
 	for i, var_type in enumerate(('snp', 'mnp', 'insertion', 'deletion', 'complex')):
 		if var_type in alleles_dic.keys():
 			return int(i+1), alleles_dic[var_type]
@@ -113,7 +125,7 @@ Explanation:
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
 parents_reader = vcf.Reader(filename = args.parents_vcf)
 #vardb = db.Variants(args.drop_db, dbpath = os.path.join(args.tmp_dir, 'hoobari.' + str(args.region) + '.db'))
-vardb = connect_db(args.mysql, args.db)
+vardb = db.Variants(args.mysql, args.db)
 
 for line in sys.stdin:
 	
@@ -150,14 +162,9 @@ for line in sys.stdin:
 				for allele in alleles:
 					allele_split = allele.replace('genotype alleles: ', '').split(':')
 					allele_dic[allele_split[0]] = allele_split[-1]
-				try:
 				#ref, alt = former_line.split('\t')[3:5]
-					ref = allele_dic['reference']
-					var_type, alt = get_var_type(allele_dic)
-				except:
-					print(str(allele_dic), file=sys.stderr)
-					print(alleles, file=sys.stderr)
-					sys.exit(1)
+				ref = allele_dic['reference']
+				var_type, alt = get_var_type(allele_dic)
 			else:
 				initiate_var == True
 
@@ -166,7 +173,7 @@ for line in sys.stdin:
 			
 			for l in position_list:
 				genotype = l[0]
-				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_ref = is_fetal_ref(maternal_gt, paternal_gt))
+				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
 				for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
 				l += [is_fetal, var_type, for_ff]
 

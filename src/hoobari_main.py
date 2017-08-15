@@ -5,7 +5,6 @@ import os
 import sys
 import subprocess
 import requests
-import sqlite3
 import vcf, vcf.utils
 import numpy as np
 import pandas as pd
@@ -23,7 +22,12 @@ import preprocessing
 from arguments import args
 
 # --------- pre-processing ----------
-conn = sqlite3.connect(args.db_path)
+if args.dbtype == 'sqlite':
+	import sqlite3
+	sql_connection = sqlite3.connect(args.db)
+elif args.dbtype == 'mysql':
+	import pymysql
+	sql_connection = db.ConnectDB(args.sqlite, args.db)
 
 # err_rate = 0.0003
 # json_dir = os.path.join(args.tmp_dir, 'jsons')
@@ -115,7 +119,7 @@ for tup in co_reader:
 										total_fetal_fraction,
 										fetal_fractions_df,
 										err_rate,
-										conn,
+										sql_connection,
 										args.model)
 
 				# calculate posteriors
