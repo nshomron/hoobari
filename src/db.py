@@ -18,7 +18,7 @@ class Variants(object):
             # Enable WAL for better concurrency
             if wal:
                 self.con.execute('PRAGMA journal_mode=WAL')
-            self.con.execute('CREATE TABLE `variants` (`chromosome` char(2) DEFAULT NULL,`pos` int(10) NOT NULL,`genotype` varchar(20) DEFAULT NULL,`length` int(10) DEFAULT NULL,`qname` varchar(50) DEFAULT NULL)')
+            self.con.execute('CREATE TABLE `variants` (`chromosome` char(2) DEFAULT NULL,`pos` int(10) NOT NULL,`genotype` varchar(20) DEFAULT NULL,`length` int(10) DEFAULT NULL,`qname` varchar(50) DEFAULT NULL UNIQUE(chromosome,position,qname,genotype))')
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):
