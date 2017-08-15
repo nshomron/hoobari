@@ -1,12 +1,16 @@
 import sqlite3
 import sys
+import shutil
 
 # Get database names
 dbs=[]
 with open(sys.argv[1]) as dbsfile:
     for line in dbsfile:
         dbs.append(line)
-db1=dbs[0]
+
+# Copy origin database
+db1=sys.argv[2]
+shutil.copyfile(dbs[0],db1)
 
 # Merge dbs
 for db2 in dbs[1:]:
