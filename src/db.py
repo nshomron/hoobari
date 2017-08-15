@@ -1,10 +1,9 @@
 import sqlite3
-from sys import stderr
 import os
 
 class Variants(object):
     def __init__(self, dbpath = './hoobari.db'):
-        
+
         # create directory
         os.makedirs(os.path.dirname(dbpath), exist_ok=True)
 
@@ -31,7 +30,7 @@ class Variants(object):
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):
-        
+
         query = '''
             INSERT INTO `variants`
             (`chromosome`,
@@ -44,11 +43,11 @@ class Variants(object):
             `for_ff`)
             VALUES
             '''
-        
+
         for line in info_list:
             query += '("{0}",{1},"{2}",{3},"{4}",{5},{6},{7}),'.format(chromosome,
                         position, line[0], line[1], line[2], line[3], line[4], line[5])
-        
+
         query = query[:-1] + ';'
         self.con.execute(query)
         self.con.commit()
