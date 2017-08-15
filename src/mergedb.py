@@ -6,7 +6,7 @@ import shutil
 dbs=[]
 with open(sys.argv[1]) as dbsfile:
     for line in dbsfile:
-        dbs.append(line)
+        dbs.append(line.strip())
 
 # Copy origin database
 db1=sys.argv[2]
