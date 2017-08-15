@@ -8,8 +8,8 @@ def MergeDBs(db1, db2, table='variants'):
 
     con.executescript("""attach '{0}' as toMerge;
                          BEGIN;
-                         insert or ignore into {1} select * from toMerge.{1}
-                         where not exists (select * from {1} where chromosome=toMerge.chromosome AND pos=toMerge.pos);
+                         insert or ignore into {1} select * from toMerge.{1} dbmerge
+                         where not exists (select * from {1} where chromosome=dbmerge.chromosome AND pos=dbmerge.pos);
                          COMMIT;
                          detach toMerge;""".format(db2,table))
 
