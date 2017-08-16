@@ -94,11 +94,13 @@ def calculate_likelihoods(
 	'''
 	sum_log_fragments_likelihoods_df = [None, None, None]
 
-	chrom, pos, ref, alt = rec.CHROM, str(rec.POS), rec.REF, str(rec.ALT[0])
+	chrom, pos, ref, alt = rec.CHROM.replace('chr', ''), str(rec.POS), rec.REF, str(rec.ALT[0])
 	
 	variant_len = len(ref) - len(alt)
 
-	pos_data = pd.read_sql_query("select genotype, length, qname from variants where chromosome='" + chrom + "' and pos='" + pos + "';", sql_connection)
+	printverbose(chrom, pos)
+	pos_data = pd.read_sql_query("select genotype, length, is_fetal from variants where chromosome='" + chrom + "' and pos=" + pos + ";", sql_connection)
+	printverbose(pos_data)
 
 	if (pos_data is not None) and (maternal_gt in (0,1,2)):
 
@@ -106,10 +108,10 @@ def calculate_likelihoods(
 		for row in pos_data.itertuples():
 			frag_genotype = row[1]
 			frag_length = max(int(row[2]) - variant_len, 0)
-			frag_qname = row[3]
+			frag_is_fetal = row[3]
 			
 			# get fetal fraction
-			if (model == 'origin') and (frag_qname in known_fetal_qnames_dic):
+			if (model == 'origin') and (frag_is_fetal == 1):
 				ff = 0.7
 			elif (model in ('lengths', 'origin')) and (frag_length in fetal_fractions_df.index.values):
 				ff = fetal_fractions_df[frag_length]

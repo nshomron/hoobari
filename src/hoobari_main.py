@@ -5,6 +5,7 @@ import os
 import sys
 import subprocess
 import requests
+import sqlite3
 import vcf, vcf.utils
 import numpy as np
 import pandas as pd
@@ -22,52 +23,16 @@ import preprocessing
 from arguments import args
 
 # --------- pre-processing ----------
-if args.dbtype == 'sqlite':
-	import sqlite3
-	sql_connection = sqlite3.connect(args.db)
-elif args.dbtype == 'mysql':
-	import pymysql
-	sql_connection = db.ConnectDB(args.sqlite, args.db)
+sql_connection = sqlite3.connect(args.db)
 
-# err_rate = 0.0003
-# json_dir = os.path.join(args.tmp_dir, 'jsons')
-# parents_gt = preprocessing.parse_parents_vcf(args.parents_vcf, fetal_sex = None, from_pkl = True, pkl_path = os.path.join(args.tmp_dir, 'parents_gt.pkl'))
-# shared_fragments_dic, fetal_fragments_dic = preprocessing.create_fetal_and_shared_fragment_pools(	parents_gt,
-# 													args.maternal_sample_name,
-# 													args.paternal_sample_name,
-# 													json_dir)
-# total_fetal_fraction = preprocessing.calculate_total_fetal_fraction(shared_fragments_dic, fetal_fragments_dic)
-# fetal_fractions_df = preprocessing.create_fetal_fraction_per_length_df(	shared_fragments_dic,
-# 									fetal_fragments_dic,
-# 									window = 3,
-# 									max = 500,
-# 									plot_dir = False)
-# del shared_fragments_dic
-# known_fetal_frags_dic = preprocessing.get_all_known_fetal_fragments(	parents_gt,
-# 									args.maternal_sample_name,
-# 									args.paternal_sample_name,
-# 									fetal_fragments_dic,
-# 									json_dir)
-
-# pkl_paths = [os.path.join(args.tmp_dir, i) for i in ['err_rate', 'parents_gt', 'total_fetal_fraction', 'fetal_fractions_df', 'known_fetal_frags_dic']]
-# pkl_save(err_rate, pkl_paths[0])
-# pkl_save(parents_gt, pkl_paths[1])
-# pkl_save(total_fetal_fraction, pkl_paths[2])
-# pkl_save(fetal_fractions_df, pkl_paths[3])
-# pkl_save(known_fetal_frags_dic, pkl_paths[4])
-
-pkl_paths = [os.path.join(args.tmp_dir, i + '.pkl') for i in ['err_rate', 'parents_gt', 'total_fetal_fraction', 'fetal_fractions_df', 'known_fetal_frags_dic']]
-err_rate = pkl_load(pkl_paths[0])
-parents_gt = pkl_load(pkl_paths[1])
-total_fetal_fraction = pkl_load(pkl_paths[2])
-fetal_fractions_df = pkl_load(pkl_paths[3])
-if args.model == 'origin':
-	known_fetal_frags_dic = pkl_load(pkl_paths[4])
-else:
-	known_fetal_frags_dic = {}
+# pre-processing
+shared_lengths, fetal_lengths = preprocessing.create_length_distributions(args.db, db_prefix = args.db_prefix)
+err_rate = preprocessing.calculate_err_rate()
+total_fetal_fraction = preprocessing.calculate_total_fetal_fraction(shared_lengths, fetal_lengths)
+fetal_fractions_df = preprocessing.create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, window = 3, max = 500, plot = args.plot_lengths)
 
 
-
+# processing
 cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
 parents_reader = vcf.Reader(filename = args.parents_vcf)
 if args.region:
@@ -96,13 +61,15 @@ vcf_out.make_header(	cfdna_reader,
 
 co_reader = vcf.utils.walk_together(cfdna_reader, parents_reader)
 for tup in co_reader:
-	if (tup[0] is None) or (tup[1] is None):
-		print(tup)
+#	if (tup[0] is None) or (tup[1] is None):
+#		print(tup)
 	joint_probabilities = prediction = phred = probabilities_source = None
 
 	cfdna_rec, parents_rec = tup
 	
+	printverbose('parents_rec: ', parents_rec)
 	if parents_rec:
+		printverbose('cfdna_rec: ', cfdna_rec)
 		if cfdna_rec:
 		
 			# calculate priors
@@ -110,7 +77,7 @@ for tup in co_reader:
 			paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
 			priors = position.calculate_priors(maternal_gt, paternal_gt)
 			
-
+			printverbose(maternal_gt, paternal_gt)
 			if maternal_gt in (0,1,2):
 
 				# calculate likelihoods
@@ -125,6 +92,7 @@ for tup in co_reader:
 				# calculate posteriors
 				joint_probabilities, prediction, phred, probabilities_source = position.calculate_posteriors(priors, likelihoods)
 				
+				printverbose('joint_probabilities', joint_probabilities)
 				if joint_probabilities is not None:
 					# fetal information for the sample and FORMAT fields
 					cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)

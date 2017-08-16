@@ -173,16 +173,19 @@ def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 	printvcf(variant_row, out_path = out_path)
 
 def unsupported_position(rec, out_path = False):
+		
+		alt = ','.join([str(i) for i in rec.ALT])
+
 		variant_row = [	rec.CHROM,
 				str(rec.POS),
 				'.',
 				rec.REF,
-				rec.ALT,
+				alt,
 				'.',
 				'.',
 				'MATINFO_FORMAT=.;MAT_INFO=.;PATINFO_FORMAT=.;PAT_INFO=.;PARENTS_QUAL=.',
 				'.',
 				'.']
 		
-		printvcf(variant_row, out_path = out_path)
+		printvcf('\t'.join(variant_row), out_path = out_path)
 

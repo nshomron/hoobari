@@ -20,8 +20,7 @@ parser.add_argument("-r", "--region", default = 'region')
 parser.add_argument("-parents_vcf", "--parents_vcf", help = 'bgzipped vcf of parents, indexed by tabix')
 parser.add_argument("-m", "--maternal_sample_name", help = 'maternal sample name as appears in parents vcf')
 parser.add_argument("-p", "--paternal_sample_name", help = 'paternal sample name as appears in parents vcf')
-parser.add_argument("-f", "--drop_db", action = 'store_true', help = 'override variants database')
-parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name')
+parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name, or prefix if hoobari is run split')
 args = parser.parse_args()
 # ------------------------------
 
@@ -173,7 +172,7 @@ for line in sys.stdin:
 
 
 bam_reader.close()
-#vardb.con.commit()
+vardb.con.commit()
 vardb.con.close()
 
 

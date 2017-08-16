@@ -50,4 +50,4 @@ class Variants(object):
 
         query = query[:-1] + ';'
         self.con.execute(query)
-        self.con.commit()
+        #self.con.commit()
