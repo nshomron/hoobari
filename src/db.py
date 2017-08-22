@@ -49,5 +49,5 @@ class Variants(object):
                         position, line[0], line[1], line[2], line[3], line[4], line[5])
 
         query = query[:-1] + ';'
-        self.con.execute(query)
+        self.con.execute(query) ### TODO: check if execute many is better
         #self.con.commit()

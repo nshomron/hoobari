@@ -156,7 +156,7 @@ for line in sys.stdin:
 				ref = allele_dic['reference']
 				var_type, alt = get_var_type(allele_dic)
 			else:
-				initiate_var == True
+				initiate_var = True
 
 	elif line.startswith('finished position'):
 		if not initiate_var:

@@ -3,12 +3,12 @@
 import os, sys
 import sqlite3
 import vcf
+from collections import Counter
 from numpy import repeat as nprepeat
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg') # to allow saving a figure even though display is invalid
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
 from multiprocessing import Pool, cpu_count
 from functools import partial
@@ -32,10 +32,8 @@ def get_fetal_and_shared_lengths(db_path):
 	shared_df = pd.read_sql_query("select chromosome, qname, length from variants where for_ff=2 and chromosome not in ('X', 'Y');", con).drop_duplicates()
 	fetal_df = pd.read_sql_query("select chromosome, qname, length from variants where for_ff=1 and chromosome not in ('X', 'Y');", con).drop_duplicates()
 
-	# shared_lengths = shared_df['length'].value_counts().to_dict()
-	# fetal_lengths = shared_df['length'].value_counts().to_dict()
-	shared_lengths = shared_df.set_index('qname')['length'].to_dict()
-	fetal_lengths = fetal_df.set_index('qname')['length'].to_dict()
+	shared_lengths = shared_df['length'].value_counts().to_dict()
+	fetal_lengths = fetal_df['length'].value_counts().to_dict()
 
 	con.close()
 
@@ -68,29 +66,27 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 	pool.close()
 	pool.join()
 
-	shared_lengths = {}
-	fetal_lengths = {}
+	shared_dic_list = []
+	fetal_dic_list = []
 	for tup in pooled_results:
-		shared_lengths.update(tup[0])
-		fetal_lengths.update(tup[1])
+		shared_dic_list.append(tup[0])
+		fetal_dic_list.append(tup[1])
 
-	shared_lengths = list(shared_lengths.values())
-	fetal_lengths = list(fetal_lengths.values())
+	shared_lengths_counter = sum(map(Counter, shared_dic_list), Counter())
+	fetal_lengths_counter = sum(map(Counter, fetal_dic_list), Counter())
+
+	shared_lengths = pd.DataFrame.from_dict(shared_lengths_counter, orient = 'index').sort_index()
+	fetal_lengths = pd.DataFrame.from_dict(fetal_lengths_counter, orient = 'index').sort_index()
 
 	return (shared_lengths, fetal_lengths)
 
-def generate_length_distributions_plot(shared_lengths_list, fetal_lengths_list, plot_file_name):
+def generate_length_distributions_plot(shared_lengths, fetal_lengths, file_name):
 	#show length distributions plot
-	shared_plot_data = pd.Series(shared_lengths_list)
-	fetal_plot_data = pd.Series(fetal_lengths_list)
-	shared_plot_data = shared_plot_data[shared_plot_data < 500]#.plot.kde()
-	fetal_plot_data = fetal_plot_data[fetal_plot_data < 500]#.plot.kde()
-	sns.kdeplot(np.array(shared_plot_data), bw=0.5)
-	sns.kdeplot(np.array(fetal_plot_data), bw=0.5)
-	plt.xlim(0, 500)
-	plt.savefig('length_distributions.png')
+	shared_lengths[shared_lengths.index < 501].plot()
+	fetal_lengths[fetal_lengths.index < 501].plot()
+	plt.savefig(file_name)
 	
-def create_fetal_fraction_per_length_df(shared_lengths_list, fetal_lengths_list, window = 3, max_len = 500):
+def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fraction, window = 3, max_len = 500):
 	'''
 	make a dictionary that shows the fetal fraction at each fragment length
 	'''
@@ -98,13 +94,22 @@ def create_fetal_fraction_per_length_df(shared_lengths_list, fetal_lengths_list,
 	# generate fetal fraction per fragment length (window) table
 	bins = range(0, max_len, window)
 	
-	fetal_pd_cut = pd.cut(fetal_lengths_list, bins, include_lowest = True)
-	shared_pd_cut = pd.cut(shared_lengths_list, bins, include_lowest = True)
+	shared_lengths_list = []
+	for i,c in shared_lengths.iterrows():
+		for j in range(int(c)):
+			shared_lengths_list.append(int(i))
 
-	
+	fetal_lengths_list = []
+	for i,c in fetal_lengths.iterrows():
+		for j in range(int(c)):
+			fetal_lengths_list.append(int(i))
+
+	shared_pd_cut = pd.cut(shared_lengths_list, bins, include_lowest = True)
+	fetal_pd_cut = pd.cut(fetal_lengths_list, bins, include_lowest = True)
+
 	fetal_binned = pd.value_counts(fetal_pd_cut, sort = False).to_frame().values.tolist()
 	shared_binned = pd.value_counts(shared_pd_cut, sort = False).to_frame().values.tolist()
-	
+
 	
 	fetal_fraction_per_length_df = pd.Series(index = range(0, bins[-1] + 1, 1))
 
@@ -117,13 +122,19 @@ def create_fetal_fraction_per_length_df(shared_lengths_list, fetal_lengths_list,
 		if fetal > 5 and shared > 5:
 			fetal_fraction_per_length_df[i] = (2 * fetal) / (shared + fetal)
 		else:
-			fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
+			if i == 0:
+				fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
+			else:
+				fetal_fraction_per_length_df[i] = fetal_fraction
 	
 	return fetal_fraction_per_length_df
 
-def calculate_total_fetal_fraction(shared_lengths_list, fetal_lengths_list):
-	total_fetal_fraction = (2 * len(fetal_lengths_list)) / (len(shared_lengths_list) + len(fetal_lengths_list))
-	printerr('Total fetal fraction: ', total_fetal_fraction)
+def calculate_total_fetal_fraction(shared_lengths, fetal_lengths):
+	
+	n_shared = int(shared_lengths.sum())
+	n_fetal = int(fetal_lengths.sum())
+	total_fetal_fraction = (2 * n_fetal) / (n_shared + n_fetal)
+	printerr('total fetal fraction:', total_fetal_fraction)
 	return total_fetal_fraction
 
 def calculate_err_rate():
@@ -139,10 +150,10 @@ def run_full_preprocessing(db_path, cores = False, db_prefix = False, window = 3
 	printerr('pre-processing', 'calculating total fetal fraction')
 	total_fetal_fraction = calculate_total_fetal_fraction(shared_lengths, fetal_lengths)
 	printerr('pre-processing', 'calculating fetal fraction per read template length')
-	fetal_fractions_df = create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, window = window, max_len = max_len)
+	fetal_fractions_df = create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, total_fetal_fraction, window = window, max_len = max_len)
 	if plot:
 		plot_file_name = 'length_distributions.png'
 		printerr('pre-processing', 'saving length distributions plot as ')
-		generate_length_distributions_plot(shared_lengths, fetal_lengths, plot_file_name)	
+		generate_length_distributions_plot(shared_lengths, fetal_lengths, plot_file_name)
 
 	return (err_rate, total_fetal_fraction, fetal_fractions_df)

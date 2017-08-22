@@ -19,18 +19,14 @@ import vcfuid
 import pprogress
 import position
 import vcf_out
-import preprocessing
+import preprocessing_lowmem as preprocessing
+# import preprocessing
 from arguments import args
 
-# --------- pre-processing ----------
 sql_connection = sqlite3.connect(args.db)
 
 # pre-processing
-shared_lengths, fetal_lengths = preprocessing.create_length_distributions(args.db, db_prefix = args.db_prefix)
-err_rate = preprocessing.calculate_err_rate()
-total_fetal_fraction = preprocessing.calculate_total_fetal_fraction(shared_lengths, fetal_lengths)
-fetal_fractions_df = preprocessing.create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, window = 3, max = 500, plot = args.plot_lengths)
-
+err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_preprocessing(args.db, cores = args.cores, db_prefix = args.db_prefix, window = 3, max_len = 500, plot = args.plot_lengths)
 
 # processing
 cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)

@@ -183,7 +183,7 @@ def unsupported_position(rec, out_path = False):
 				alt,
 				'.',
 				'.',
-				'MATINFO_FORMAT=.;MAT_INFO=.;PATINFO_FORMAT=.;PAT_INFO=.;PARENTS_QUAL=.',
+				'PARENTS_FORMAT=.;MAT_INFO=.;PAT_INFO=.;PARENTS_QUAL=.',
 				'.',
 				'.']
 		
