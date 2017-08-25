@@ -1,7 +1,7 @@
 import numpy as np
 from sys import argv
 
-MAX_VALUE=1000
+MAX_VALUE=100
 
 def calculatePhred(joint_probabilities):
     index = tuple(joint_probabilities)
@@ -40,6 +40,7 @@ for key, value in results:
 
 # Plotting results
 import matplotlib
+import matplotlib.patches as mpc
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
@@ -49,15 +50,21 @@ maxs=[]
 for key in res.keys():
     diffs.append(np.fabs(key[1] - key[2]))
     maxs.append(np.max(key))
-print(list(res.values()))
 
 # Plot
-colors=list(res.values)
-plt.scatter(max, diff, c=)
-ax0.plot(np.array(maxs),np.array(list(res.values())))
-# ax0.ylabel("PHRED")
-ax0.title("Max values")
-ax1.plot(np.array(diffs),np.array(list(res.values())))
-ax1.title("Diffrence betweeen values")
-fig.tight_layout()
-fig.savefig('ha.png')
+colors=[]
+for phred in res.values():
+    if np.isnan(phred):
+        colors.append('#000000')
+    elif np.isinf(phred):
+        colors.append('#ff0000')
+    else:
+        colors.append('#00ff04')
+plt.scatter(maxs, diffs, c=colors)
+plt.xlabel("Max values")
+plt.ylabel("Diffrence betweeen values")
+plt.xlabel("Max values")
+plt.legend(handles = [mpc.Patch(color='#000000', label='NaN'),
+                      mpc.Patch(color='#ff0000', label='Infinity'),
+                      mpc.Patch(color='#00ff04', label='Valid number')])
+plt.savefig('ha.png')
