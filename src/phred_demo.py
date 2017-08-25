@@ -11,6 +11,9 @@ def calculatePhred(joint_probabilities):
     posteriors = joint_probabilities / sum_probabilities
     max_probability = np.max(posteriors)
 
+    if max_probability == 1:
+        print('ERROR:',index,'product is zero')
+
     return ((np.log10(1-max_probability))*(-10))
 
 def randCalc(arr):
@@ -18,7 +21,7 @@ def randCalc(arr):
     # Reset seed
     np.random.seed(None)
     arr = [arr]
-    arr.extend(np.random.random_sample(2) * MAX_VALUE)
+    arr.extend(np.float128(np.random.random_sample(2)) * MAX_VALUE)
     return (tuple(arr),calculatePhred(arr))
 
 # Testing
@@ -60,11 +63,12 @@ for phred in res.values():
         colors.append('#ff0000')
     else:
         colors.append('#00ff04')
-plt.scatter(maxs, diffs, c=colors)
+plt.scatter(maxs, diffs, c=colors, marker='.')
 plt.xlabel("Max values")
 plt.ylabel("Diffrence betweeen values")
 plt.xlabel("Max values")
+plt.minorticks_on()
 plt.legend(handles = [mpc.Patch(color='#000000', label='NaN'),
                       mpc.Patch(color='#ff0000', label='Infinity'),
                       mpc.Patch(color='#00ff04', label='Valid number')])
-plt.savefig('ha.png')
+plt.savefig('ha.png', dpi=200.0)
