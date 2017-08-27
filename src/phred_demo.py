@@ -1,6 +1,9 @@
 import numpy as np
 from sys import argv
+from decimal import *
 
+#TODO: change overkill precision to something saner
+getcontext().prec = 150
 MAX_VALUE=100
 
 def calculatePhred(joint_probabilities):
@@ -21,8 +24,13 @@ def randCalc(arr):
     # Reset seed
     np.random.seed(None)
     arr = [arr]
-    arr.extend(np.float128(np.random.random_sample(2)) * MAX_VALUE)
-    return (tuple(arr),calculatePhred(arr))
+    arr.extend(np.random.random_sample(2) * MAX_VALUE)
+
+    # Turn to extreme precision in cases of possible overflow
+    if np.fabs(arr[2] - arr[1]) > 35 and 'nodecimal' not in argv:
+        return (tuple(arr),calculatePhred(np.array([Decimal(arr[0]),Decimal(arr[1]),Decimal(arr[2])])))
+    else:
+        return (tuple(arr),calculatePhred(np.array(arr)))
 
 # Testing
 import pandas as pd
@@ -57,9 +65,9 @@ for key in res.keys():
 # Plot
 colors=[]
 for phred in res.values():
-    if np.isnan(phred):
+    if np.isnan(float(phred)):
         colors.append('#000000')
-    elif np.isinf(phred):
+    elif np.isinf(float(phred)):
         colors.append('#ff0000')
     else:
         colors.append('#00ff04')
