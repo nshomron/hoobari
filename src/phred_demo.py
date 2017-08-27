@@ -2,8 +2,7 @@ import numpy as np
 from sys import argv
 from decimal import *
 
-#TODO: change overkill precision to something saner
-getcontext().prec = 150
+getcontext().prec = 45
 MAX_VALUE=100
 
 def calculatePhred(joint_probabilities):
