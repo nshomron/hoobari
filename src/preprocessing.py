@@ -134,10 +134,13 @@ def run_full_preprocessing(db_path, cores = False, db_prefix = False, window = 3
 	
 	printerr('pre-processing', 'creating length distributions')
 	shared_lengths, fetal_lengths = create_length_distributions(db_path, cores = cores, db_prefix = db_prefix)
+	
 	printerr('pre-processing', 'calculating error rate')
 	err_rate = calculate_err_rate()
+	
 	printerr('pre-processing', 'calculating total fetal fraction')
 	total_fetal_fraction = calculate_total_fetal_fraction(shared_lengths, fetal_lengths)
+	
 	printerr('pre-processing', 'calculating fetal fraction per read template length')
 	fetal_fractions_df = create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, window = window, max_len = max_len)
 	if plot:

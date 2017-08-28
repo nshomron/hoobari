@@ -40,8 +40,8 @@ def calculate_priors(maternal_gt, paternal_gt):
 	# TODO: add error rate to prior
 
 	if (maternal_gt in valid_gts) and (paternal_gt in valid_gts):
-		p_maternal_alt = maternal_gt / 2
-		p_paternal_alt = paternal_gt / 2
+		p_maternal_alt = max(de_novo, maternal_gt / 2)
+		p_paternal_alt = max(de_novo, paternal_gt / 2)
 		priors = np.array([	(1-p_maternal_alt)*(1-p_paternal_alt),
 					p_maternal_alt*(1-p_paternal_alt) + (1-p_maternal_alt)*p_paternal_alt,
 					p_maternal_alt*p_paternal_alt])
@@ -49,6 +49,8 @@ def calculate_priors(maternal_gt, paternal_gt):
 		priors = np.array([1/3, 1/3, 1/3])
 
 	printverbose('priors:', priors)
+	priors = np.log(priors)
+	printverbose('log(priors):', priors)	
 
 	return priors
 
@@ -155,10 +157,8 @@ def simple_qual_calculation(posteriors):
 		qual = 10000
 	else:
 		qual = -10 * np.log10(posteriors[0])
-		if qual == -0.0:
-			qual = 0
 
-	return round(qual,2)
+	return qual
 
 def likelihoods_to_phred_scale(likelihoods):
 	
@@ -181,8 +181,6 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# parents genotypes might give a prediction but if it's not supported by cfdna it's only indirect - good or not? not for de-novo...
 	# it is good for recessive disease!
 
-	var_priors = np.log(var_priors)
-	printverbose('log(priors):', var_priors)
 
 	joint_probabilities = np.add(var_priors, var_likelihoods, dtype = np.float64)
 	prediction = joint_probabilities.argmax()
@@ -200,12 +198,14 @@ def calculate_posteriors(var_priors, var_likelihoods):
 		printverbose('posteriors:', posteriors)
 		while 1 in posteriors:
 			if getcontext().prec < getcontext().Emax:
-				getcontext().prec += 1000
+				getcontext().prec += 100
 				exp_joint_probabilities = np.array([Decimal(i).exp() for i in joint_probabilities_normalized])
 				posteriors = np.array(exp_joint_probabilities / np.sum(exp_joint_probabilities))
 				printverbose('posteriors:', posteriors)
 			else:
 				break
+
+	log10_likelihoods_normalized = joint_probabilities_normalized / np.log(10)
 
 	qual = simple_qual_calculation(posteriors)
 

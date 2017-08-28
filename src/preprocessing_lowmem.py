@@ -106,10 +106,17 @@ def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fra
 
 	shared_pd_cut = pd.cut(shared_lengths_list, bins, include_lowest = True)
 	fetal_pd_cut = pd.cut(fetal_lengths_list, bins, include_lowest = True)
+	printverbose('shared_pd_cut')
+	printverbose(shared_pd_cut)
+	printverbose('fetal_pd_cut')
+	printverbose(fetal_pd_cut)
 
 	fetal_binned = pd.value_counts(fetal_pd_cut, sort = False).to_frame().values.tolist()
 	shared_binned = pd.value_counts(shared_pd_cut, sort = False).to_frame().values.tolist()
-
+	printverbose('fetal_binned')
+	printverbose(fetal_binned)
+	printverbose('shared_binned')
+	printverbose(shared_binned)
 	
 	fetal_fraction_per_length_df = pd.Series(index = range(0, bins[-1] + 1, 1))
 
@@ -119,13 +126,22 @@ def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fra
 		idx_in_binned = binned_list_indices[i]
 		fetal = fetal_binned[idx_in_binned][0]
 		shared = shared_binned[idx_in_binned][0]
-		if fetal > 5 and shared > 5:
-			fetal_fraction_per_length_df[i] = (2 * fetal) / (shared + fetal)
+		if fetal > 10 and shared > 10:
+			ff = (2 * fetal) / (shared + fetal)
+			if ff > 1:
+				if i > 0:
+					fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
+				else:
+					fetal_fraction_per_length_df[i] = fetal_fraction
+			else:
+				fetal_fraction_per_length_df[i] = ff
 		else:
-			if i == 0:
+			if i > 0:
 				fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
 			else:
 				fetal_fraction_per_length_df[i] = fetal_fraction
+
+	printverbose(fetal_fraction_per_length_df)
 	
 	return fetal_fraction_per_length_df
 

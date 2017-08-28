@@ -5,42 +5,16 @@ import sys
 from time import strftime
 from stderr import *
 
-info_dic = OrderedDict([('PARENTS_FORMAT', {	'num': '.',
-						'type': 'String',
-						'desc': 'Format of parental sample ganotyping information',
-						'source': 'parental vcf'}),
-			('MAT_INFO', {		'num': '.',
-						'type': 'String',
-						'desc': 'Maternal sample ganotyping information',
-						'source': 'parental vcf'}),
-			('PAT_INFO', {		'num': '.',
-						'type': 'String',
-						'desc': 'Paternal sample ganotyping information',
-						'source': 'parental vcf'}),
-			('PARENTS_QUAL', {	'num': '.',
-						'type': 'Float',
-						'desc': 'Parental samples QUAL score',
-						'source': 'parental vcf'}),
-			('PROB_SOURCE', {	'num': '.',
-						'type': 'String',
-						'desc': 'Whether the probabilities for the calculations are only the posteriors, only the likelihoods, or joint',
-						'source': 'hoobari'})])
-
-reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GJ')
-
-hoobari_formats_dic = OrderedDict([('GJ', {	'num': 'G',
-						'type': 'Float',
-						'desc': 'Genotype Joint probabilities, log scaled. This is the Bayesian numerator (likelihood*prior) for each possible genotype (0/0, 0/1, 1/1)',
-						'source': 'hoobari'})])
+reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GP')
 
 def print_info_or_format_row(info_or_format, field_id, number, field_type, description, source=False, output_path = False):
 	line_list = []
 	line_list.append('##' + info_or_format +'=<ID=' + field_id)
 	line_list.append('Number=' + str(number)) # int, A, R, G, '.'
 	line_list.append('Type=' + field_type)
+	line_list.append('Description="' + description + '">')
 	if source:
 		line_list.append('Source="' + source + '"')
-	line_list.append('Description="' + description + '">')
 
 	printvcf(','.join(line_list), out_path = output_path)
 	
@@ -51,16 +25,12 @@ def printvcf(x, *args, out_path = False, **kargs):
 	else:
 		print(x, *args, **kargs)
 
-def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sample_name, info_dic, reserved_formats, output_path = False):
+def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sample_name, reserved_formats, output_path = False):
 	
 	if cfdna_vcf_reader.metadata['reference'] != parents_vcf_reader.metadata['reference']:
 		printerr('Warning! are the vcf files based on the same reference genome?')
-		printerr('cfDNA:', str(cfdna_vcf_reader.metadata['reference']))
-		printerr('parental:', str(parents_vcf_reader.metadata['reference']))
 	if cfdna_vcf_reader.contigs != parents_vcf_reader.contigs:
 		printerr('Warning! cfdna and parental vcf files have different contigs')
-		printerr('cfDNA:', str(cfdna_vcf_reader.contigs))
-		printerr('parental:', str(parents_vcf_reader.contigs))
 
 	# print unique header fields
 	printvcf(	'##fileformat=' + cfdna_vcf_reader.metadata['fileformat'],
@@ -78,46 +48,38 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 		cfdna_contigs_output.append('##contig=<ID=' + str(c.id) + ',length=' + str(c.length) + '>')
 	printvcf('\n'.join(cfdna_contigs_output), out_path = output_path)
 
+	# TODO: print filter header fields from parents?
 
-	# TODO: print filter header fields from parents
-
-	# print format header fields
-	cfdna_infos_names = [i[0] for i in cfdna_vcf_reader.formats.values()]
-	for k in reserved_formats:
-		
-		k_class, k_id = 'FORMAT', k
-
-		if k in cfdna_infos_names:
-			
-			if cfdna_vcf_reader.formats[k].num in vcf.Writer.counts:
-				k_num = vcf.Writer.counts[cfdna_vcf_reader.formats[k].num]
-			else:
-				k_num = cfdna_vcf_reader.formats[k].num
-
-			k_type = str(cfdna_vcf_reader.formats['GT'].type)
-			k_desc = cfdna_vcf_reader.formats[k].desc
-			k_source = 'cfdna vcf file'
-
-			if k == 'GT':
-				k_source = 'hoobari'
-				
-		else:
-			k_num = hoobari_formats_dic[k]['num']
-			k_type = hoobari_formats_dic[k]['type']
-			k_desc = hoobari_formats_dic[k]['desc']
-			k_source = 'hoobari'
-		
-		print_info_or_format_row(k_class, k_id, k_num, k_type, k_desc, source = k_source, output_path = output_path)
-
-	# print info header fields
-	for k in info_dic:
-		print_info_or_format_row(	'INFO',
-						k,
-						info_dic[k]['num'],
-						info_dic[k]['type'],
-						info_dic[k]['desc'],
-						info_dic[k]['source'],
-						output_path = output_path)
+	# print format and info header fields	
+	printvcf(
+	'##FORMAT=<ID=GT,Number=1,Type=String,Source="hoobari",Description="Genotype",Source="hoobari">',
+	'##FORMAT=<ID=DP,Number=1,Type=String,Description="Read Depth">',
+	'##FORMAT=<ID=AD,Number=R,Type=String,Description="Number of observation for each allele">',
+	'##FORMAT=<ID=RO,Number=1,Type=String,Description="Reference allele observation count">',
+	'##FORMAT=<ID=QR,Number=1,Type=String,Description="Sum of quality of the reference observations">',
+	'##FORMAT=<ID=AO,Number=A,Type=String,Description="Alternate allele observation count">',
+	'##FORMAT=<ID=QA,Number=A,Type=String,Description="Sum of quality of the alternate observations">',
+	'##FORMAT=<ID=GP,Number=G,Type=String,Description="Genotype Posterior",Source="hoobari">',
+	'##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy",Source="hoobari">',
+	'##INFO=<ID=MGT,Number=1,Type=String,Description="Maternal Genotype">',
+	'##INFO=<ID=MGQ,Number=1,Type=Float,Description="Maternal Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
+	'##INFO=<ID=MGL,Number=G,Type=Float,Description="Maternal Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
+	'##INFO=<ID=MDP,Number=1,Type=Integer,Description="Maternal Read Depth">',
+	'##INFO=<ID=MRO,Number=1,Type=Integer,Description="Maternal Reference allele observation count">',
+	'##INFO=<ID=MQR,Number=1,Type=Integer,Description="Maternal Sum of quality of the reference observations">',
+	'##INFO=<ID=MAO,Number=A,Type=Integer,Description="Maternal Alternate allele observation count">',
+	'##INFO=<ID=MQA,Number=A,Type=Integer,Description="Maternal Sum of quality of the alternate observations">',
+	'##INFO=<ID=PGT,Number=1,Type=String,Description="Paternal Genotype">',
+	'##INFO=<ID=PGQ,Number=1,Type=Float,Description="Paternal Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
+	'##INFO=<ID=PGL,Number=G,Type=Float,Description="Paternal Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
+	'##INFO=<ID=PDP,Number=1,Type=Integer,Description="Paternal Read Depth">',
+	'##INFO=<ID=PRO,Number=1,Type=Integer,Description="Paternal Reference allele observation count">',
+	'##INFO=<ID=PQR,Number=1,Type=Integer,Description="Paternal Sum of quality of the reference observations">',
+	'##INFO=<ID=PAO,Number=A,Type=Integer,Description="Paternal Alternate allele observation count">',
+	'##INFO=<ID=PQA,Number=A,Type=Integer,Description="Paternal Sum of quality of the alternate observations">',
+	'##INFO=<ID=MPQ,Number=.,Type=Float,Description="Maternal and Paternal QUAL score from the parental vcf">',
+	sep = '\n',
+	out_path = output_path)
 
 	# print column names
 	vcf_columns = ['#CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT'] + [fetal_sample_name]
@@ -161,7 +123,7 @@ def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 
 	# columns 9-10
 	if format_and_gt_dic == '.':
-		row_list += ['.', '.']
+		row_list += [':'.join(reserved_formats), '.']
 	else:
 		format_list = list(format_and_gt_dic.keys())
 		fetal_gt_list = list(format_and_gt_dic.values())
@@ -184,7 +146,7 @@ def unsupported_position(rec, out_path = False):
 				'.',
 				'.',
 				'PARENTS_FORMAT=.;MAT_INFO=.;PAT_INFO=.;PARENTS_QUAL=.',
-				'.',
+				':'.join(reserved_formats),
 				'.']
 		
 		printvcf('\t'.join(variant_row), out_path = out_path)
