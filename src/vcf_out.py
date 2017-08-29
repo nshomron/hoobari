@@ -5,7 +5,7 @@ import sys
 from time import strftime
 from stderr import *
 
-reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GP')
+reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GL', 'PG', 'PP')
 
 def print_info_or_format_row(info_or_format, field_id, number, field_type, description, source=False, output_path = False):
 	line_list = []
@@ -59,8 +59,9 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 	'##FORMAT=<ID=QR,Number=1,Type=String,Description="Sum of quality of the reference observations">',
 	'##FORMAT=<ID=AO,Number=A,Type=String,Description="Alternate allele observation count">',
 	'##FORMAT=<ID=QA,Number=A,Type=String,Description="Sum of quality of the alternate observations">',
-	'##FORMAT=<ID=GP,Number=G,Type=String,Description="Genotype Posterior",Source="hoobari">',
 	'##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy",Source="hoobari">',
+	'##FORMAT=<ID=PP,Number=G,Type=String,Description="P(Prior), Per-site genotype prior probabilities",Source="hoobari">',
+	'##FORMAT=<ID=PP,Number=G,Type=String,Description="P(Posterior), Per-site genotype posterior probabilities",Source="hoobari">',
 	'##INFO=<ID=MGT,Number=1,Type=String,Description="Maternal Genotype">',
 	'##INFO=<ID=MGQ,Number=1,Type=Float,Description="Maternal Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
 	'##INFO=<ID=MGL,Number=G,Type=Float,Description="Maternal Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
@@ -143,11 +144,11 @@ def unsupported_position(rec, out_path = False):
 				'.',
 				rec.REF,
 				alt,
+				'0',
 				'.',
 				'.',
-				'PARENTS_FORMAT=.;MAT_INFO=.;PAT_INFO=.;PARENTS_QUAL=.',
 				':'.join(reserved_formats),
-				'.']
+				':'.join(['.'] * len(reserved_formats)),]
 		
 		printvcf('\t'.join(variant_row), out_path = out_path)
 

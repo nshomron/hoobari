@@ -4,6 +4,7 @@ import os
 import requests
 import numpy as np
 import pandas as pd
+import time
 from json_commands import *
 import argparse
 from multiprocessing import Pool, cpu_count
@@ -17,6 +18,7 @@ import vcfuid
 # --------- global -------------
 de_novo = 1.2e-8
 valid_gts = (0,1,2)
+default_decimal_prec = getcontext().prec
 
 # --------- functions ----------
 def calculate_priors(maternal_gt, paternal_gt):
@@ -63,6 +65,9 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 	if fetus is AA - 0*ff + 0.5(1-ff) = 0.5(1-ff)
 	'''
 
+	# 0 would cause -inf after log, and the sum would also be -inf
+	# TODO: change this when error will be added to the algorithm
+
 	# fetal genotypes: 0,1,2
 	# print(frag_genotype)
 	if frag_genotype == alt:
@@ -103,18 +108,23 @@ def calculate_likelihoods(
 	
 	variant_len = len(ref) - len(alt)
 
+	start_time = time.time()
 	printverbose(chrom, pos)
 	pos_data = pd.read_sql_query("select genotype, length, is_fetal from variants where chromosome='" + chrom + "' and pos=" + pos + ";", sql_connection)
 	printverbose(pos_data)
+	print(time.time() - start_time)
 
 	first = 1
 	if (len(pos_data) > 0) and (maternal_gt in valid_gts):
 
-		for row in pos_data.itertuples():
-			frag_genotype = row[1]
-			frag_length = max(int(row[2]) - variant_len, 0)
-			frag_is_fetal = row[3]
+		# for row in pos_data.itertuples():
+		for frag_genotype, frag_length, frag_is_fetal in zip(pos_data['genotype'], pos_data['length'], pos_data['is_fetal']):
+			# frag_genotype = row[1]
+			# frag_length = max(int(row[2]) - variant_len, 0)
+			# frag_is_fetal = row[3]
 			
+			frag_length = max(int(frag_length) - variant_len, 0)
+
 			# get fetal fraction
 			if (model == 'origin') and (frag_is_fetal == 1):
 				ff = 1 - err_rate
@@ -124,20 +134,18 @@ def calculate_likelihoods(
 				ff = total_fetal_fraction
 			
 			frag_i_likelihoods = calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, ff, err_rate)
-			if frag_i_likelihoods is not None:
-				# 0 would cause -inf after log, and the sum would also be -inf
-				# TODO: change this when error will be added to the algorithm
-				#frag_i_likelihoods[frag_i_likelihoods == 0] = 0.003
-				frag_i_likelihoods = np.log(frag_i_likelihoods, dtype = np.float64)
-				if first:
-					sum_log_fragments_likelihoods_df = frag_i_likelihoods
-					first = 0
-				sum_log_fragments_likelihoods_df = np.add(sum_log_fragments_likelihoods_df, frag_i_likelihoods)
-				printverbose(ff, frag_i_likelihoods, sum_log_fragments_likelihoods_df, sep = '\t')
+
+			#frag_i_likelihoods[frag_i_likelihoods == 0] = 0.003
+			frag_i_likelihoods = np.log(frag_i_likelihoods, dtype = np.float64)
+			if first:
+				sum_log_fragments_likelihoods_df = frag_i_likelihoods
+				first = 0
+			sum_log_fragments_likelihoods_df = np.add(sum_log_fragments_likelihoods_df, frag_i_likelihoods)
+			printverbose(ff, frag_i_likelihoods, sum_log_fragments_likelihoods_df, sep = '\t')
 
 	else:
 		sum_log_fragments_likelihoods_df = np.log([1, 1, 1], dtype = np.float64)
-	
+	print(time.time() - start_time)
 	printverbose(sum_log_fragments_likelihoods_df)
 
 	return sum_log_fragments_likelihoods_df
@@ -158,7 +166,10 @@ def simple_qual_calculation(posteriors):
 		if qual == -0.0:
 			qual = 0
 
-	return round(qual,2)
+	if qual == 0:
+		return int(0)
+	else:
+		return round(qual,2)
 
 def likelihoods_to_phred_scale(likelihoods):
 	
@@ -190,22 +201,27 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	joint_probabilities_normalized = joint_probabilities - np.min(joint_probabilities[np.isfinite(joint_probabilities)])
 	exp_joint_probabilities = np.exp(joint_probabilities_normalized)
 	printverbose('joint_probabilities_normalized:', joint_probabilities_normalized)
-	if np.inf not in exp_joint_probabilities:
-		posteriors = np.asarray((exp_joint_probabilities / np.sum(exp_joint_probabilities)), dtype = np.float64)
-		printverbose('posteriors:', posteriors)
-	else:
+	posteriors = np.asarray((exp_joint_probabilities / np.sum(exp_joint_probabilities)), dtype = np.float64)
+	printverbose('posteriors:', posteriors)
+	if np.inf in exp_joint_probabilities:
+		getcontext().prec = default_decimal_prec
 		posteriors = exp_joint_probabilities / np.sum(exp_joint_probabilities)
 		exp_joint_probabilities = np.array([Decimal(i).exp() for i in joint_probabilities_normalized])
 		posteriors = np.array(exp_joint_probabilities / np.sum(exp_joint_probabilities))
-		printverbose('posteriors:', posteriors)
+		printverbose('posteriors:', posteriors)		
+		start_time = time.time()
+		i = 0
 		while 1 in posteriors:
 			if getcontext().prec < getcontext().Emax:
-				getcontext().prec += 1000
+				i += 1
+				getcontext().prec += 10**int(np.floor(np.log(i)))
+				printverbose(str(getcontext().prec))
 				exp_joint_probabilities = np.array([Decimal(i).exp() for i in joint_probabilities_normalized])
 				posteriors = np.array(exp_joint_probabilities / np.sum(exp_joint_probabilities))
 				printverbose('posteriors:', posteriors)
 			else:
 				break
+		printverbose(time.time() - start_time)
 
 	qual = simple_qual_calculation(posteriors)
 

@@ -91,16 +91,17 @@ for tup in co_reader:
 
 				# calculate posteriors
 				posteriors, prediction, phred = position.calculate_posteriors(priors, likelihoods)
-				
 				normalized_likelihoods = position.likelihoods_to_phred_scale(likelihoods)
 
 				# fetal information for the sample and FORMAT fields
 				cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
 				if cfdna_geno_sample_dic != '.':
 					cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
-					cfdna_geno_sample_dic['PP'] = (','.join(str(round(p,5)) for p in list(posteriors)))
-					cfdna_geno_sample_dic['PG'] = (','.join(str(round(p,5)) for p in list(priors)))
 					cfdna_geno_sample_dic['GL'] = (','.join(str(round(p,2)) for p in list(normalized_likelihoods)))
+					cfdna_geno_sample_dic['PG'] = (','.join(str(round(p,5)) for p in list(priors)))
+					cfdna_geno_sample_dic['PP'] = (','.join(str(round(p,5)) for p in list(posteriors)))
+					
+					
 
 
 				# parental information for INFO field
