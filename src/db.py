@@ -27,6 +27,8 @@ class Variants(object):
                                 `is_fetal` tinyint(1) DEFAULT NULL,
                                 `var_type` tinyint(1) DEFAULT NULL,
                                 `for_ff` tinyint(1) DEFAULT NULL)''')
+            
+            self.con.execute('CREATE INDEX idx_chrom_pos ON variants (chromosome, pos);')
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):

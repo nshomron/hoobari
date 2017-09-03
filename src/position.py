@@ -3,7 +3,6 @@
 import os
 import requests
 import numpy as np
-import pandas as pd
 import time
 from json_commands import *
 import argparse
@@ -108,20 +107,14 @@ def calculate_likelihoods(
 	
 	variant_len = len(ref) - len(alt)
 
-	start_time = time.time()
 	printverbose(chrom, pos)
-	pos_data = pd.read_sql_query("select genotype, length, is_fetal from variants where chromosome='" + chrom + "' and pos=" + pos + ";", sql_connection)
+	pos_data = sql_connection.execute("select genotype, length, is_fetal from variants where chromosome='" + chrom + "' and pos=" + pos + ";").fetchall()
 	printverbose(pos_data)
-	print(time.time() - start_time)
 
 	first = 1
 	if (len(pos_data) > 0) and (maternal_gt in valid_gts):
 
-		# for row in pos_data.itertuples():
-		for frag_genotype, frag_length, frag_is_fetal in zip(pos_data['genotype'], pos_data['length'], pos_data['is_fetal']):
-			# frag_genotype = row[1]
-			# frag_length = max(int(row[2]) - variant_len, 0)
-			# frag_is_fetal = row[3]
+		for frag_genotype, frag_length, frag_is_fetal in pos_data:
 			
 			frag_length = max(int(frag_length) - variant_len, 0)
 
@@ -145,7 +138,6 @@ def calculate_likelihoods(
 
 	else:
 		sum_log_fragments_likelihoods_df = np.log([1, 1, 1], dtype = np.float64)
-	print(time.time() - start_time)
 	printverbose(sum_log_fragments_likelihoods_df)
 
 	return sum_log_fragments_likelihoods_df
@@ -160,16 +152,16 @@ def calculate_phred(joint_probabilities):
 def simple_qual_calculation(posteriors):
 	
 	if posteriors[0] == 0:
-		qual = 10000
+		return '1e+06'
 	else:
 		qual = -10 * np.log10(posteriors[0])
-		if qual == -0.0:
-			qual = 0
 
-	if qual == 0:
-		return int(0)
-	else:
-		return round(qual,2)
+		if qual == 0:
+			return int(0)
+		elif qual < 1:
+			return '{:0.3e}'.format(qual)
+		else:
+			return round(qual,2)
 
 def likelihoods_to_phred_scale(likelihoods):
 	
@@ -205,20 +197,14 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	printverbose('posteriors:', posteriors)
 	if np.inf in exp_joint_probabilities:
 		getcontext().prec = default_decimal_prec
-		posteriors = exp_joint_probabilities / np.sum(exp_joint_probabilities)
-		exp_joint_probabilities = np.array([Decimal(i).exp() for i in joint_probabilities_normalized])
-		posteriors = np.array(exp_joint_probabilities / np.sum(exp_joint_probabilities))
-		printverbose('posteriors:', posteriors)		
 		start_time = time.time()
-		i = 0
-		while 1 in posteriors:
-			if getcontext().prec < getcontext().Emax:
-				i += 1
-				getcontext().prec += 10**int(np.floor(np.log(i)))
-				printverbose(str(getcontext().prec))
+		while 1 or np.nan in posteriors:
+			if getcontext().prec <= 2**11:
+				printverbose('precision:', str(getcontext().prec))
 				exp_joint_probabilities = np.array([Decimal(i).exp() for i in joint_probabilities_normalized])
 				posteriors = np.array(exp_joint_probabilities / np.sum(exp_joint_probabilities))
 				printverbose('posteriors:', posteriors)
+				getcontext().prec *= 2
 			else:
 				break
 		printverbose(time.time() - start_time)

@@ -33,24 +33,11 @@ err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_prep
 												max_len = 500,
 												plot = args.plot_lengths)
 
-# processing
+# create vcf files readers
 cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
 parents_reader = vcf.Reader(filename = args.parents_vcf)
-if args.region:
-	args_region_split = args.region.split(':')
-	chrom = args_region_split[0]
-	if len(args_region_split) > 1: 
-		start, end = [int(i) for i in args_region_split[1].split('-')]
-		cfdna_reader = cfdna_reader.fetch(chrom, start, end)
-		parents_reader = parents_reader.fetch(chrom, start, end)
-	else:
-		cfdna_reader = cfdna_reader.fetch(chrom)
-		parents_reader = parents_reader.fetch(chrom)
 
-cfdna_id = cfdna_reader.samples[0]
-mother_id = args.maternal_sample_name
-father_id = args.paternal_sample_name
-
+# print header
 input_command = ' '.join(sys.argv) + '"'
 vcf_out.make_header(	cfdna_reader,
 			parents_reader,
@@ -59,6 +46,27 @@ vcf_out.make_header(	cfdna_reader,
 			vcf_out.reserved_formats,
 			output_path = args.vcf_output)
 
+# fetch region
+if args.region:
+	region_split = re.split(':|-', args.region)
+	chrom = region_split[0]
+	start = int(region_split[1]) if len(region_split) > 1 else None
+	end = int(region_split[2]) if len(region_split) > 2 else None
+	try:
+		cfdna_reader = cfdna_reader.fetch(chrom, start, end)
+		parents_reader = parents_reader.fetch(chrom, start, end)
+	except ValueError as e:
+		errmessage = e.args[0]
+		if errmessage.find('could not create iterator for region') == 0:
+			sys.exit('warning! ' + errmessage + ', probably the input file does not contain any variants in the region.')
+
+
+# get sample names from vcf files and from arguments
+cfdna_id = cfdna_reader.samples[0]
+mother_id = args.maternal_sample_name
+father_id = args.paternal_sample_name
+
+# processing
 co_reader = vcf.utils.walk_together(cfdna_reader, parents_reader)
 for tup in co_reader:
 #	if (tup[0] is None) or (tup[1] is None):

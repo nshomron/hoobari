@@ -60,11 +60,12 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 	'##FORMAT=<ID=AO,Number=A,Type=String,Description="Alternate allele observation count">',
 	'##FORMAT=<ID=QA,Number=A,Type=String,Description="Sum of quality of the alternate observations">',
 	'##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy",Source="hoobari">',
-	'##FORMAT=<ID=PP,Number=G,Type=String,Description="P(Prior), Per-site genotype prior probabilities",Source="hoobari">',
+	'##FORMAT=<ID=PG,Number=G,Type=String,Description="P(Genotype), Per-site genotype prior probabilities",Source="hoobari">',
 	'##FORMAT=<ID=PP,Number=G,Type=String,Description="P(Posterior), Per-site genotype posterior probabilities",Source="hoobari">',
 	'##INFO=<ID=MGT,Number=1,Type=String,Description="Maternal Genotype">',
 	'##INFO=<ID=MGQ,Number=1,Type=Float,Description="Maternal Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
 	'##INFO=<ID=MGL,Number=G,Type=Float,Description="Maternal Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
+	'##INFO=<ID=MAD,Number=R,Type=Integer,Description="Maternal Number of observation for each allele">',
 	'##INFO=<ID=MDP,Number=1,Type=Integer,Description="Maternal Read Depth">',
 	'##INFO=<ID=MRO,Number=1,Type=Integer,Description="Maternal Reference allele observation count">',
 	'##INFO=<ID=MQR,Number=1,Type=Integer,Description="Maternal Sum of quality of the reference observations">',
@@ -73,6 +74,7 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 	'##INFO=<ID=PGT,Number=1,Type=String,Description="Paternal Genotype">',
 	'##INFO=<ID=PGQ,Number=1,Type=Float,Description="Paternal Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
 	'##INFO=<ID=PGL,Number=G,Type=Float,Description="Paternal Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
+	'##INFO=<ID=PAD,Number=R,Type=Integer,Description="Paternal Number of observation for each allele">',
 	'##INFO=<ID=PDP,Number=1,Type=Integer,Description="Paternal Read Depth">',
 	'##INFO=<ID=PRO,Number=1,Type=Integer,Description="Paternal Reference allele observation count">',
 	'##INFO=<ID=PQR,Number=1,Type=Integer,Description="Paternal Sum of quality of the reference observations">',
@@ -124,7 +126,7 @@ def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 
 	# columns 9-10
 	if format_and_gt_dic == '.':
-		row_list += [':'.join(reserved_formats), '.']
+		row_list += [':'.join(reserved_formats), ':'.join(['.'] * len(reserved_formats))]
 	else:
 		format_list = list(format_and_gt_dic.keys())
 		fetal_gt_list = list(format_and_gt_dic.values())
