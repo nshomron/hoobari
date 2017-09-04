@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 class Variants(object):
-    def __init__(self, dbpath = './hoobari.db'):
+    def __init__(self, dbpath = './hoobari.db', probe=True):
 
         # create directory
         os.makedirs(os.path.dirname(dbpath), exist_ok=True)
@@ -15,6 +15,7 @@ class Variants(object):
         if probe:
             res = self.con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='variants';")
 
+<<<<<<< HEAD
         # Drop existing database if needed
         if res.fetchone():
             self.con.execute('DROP TABLE `variants`;')
@@ -31,6 +32,22 @@ class Variants(object):
                                 `for_ff` tinyint(1) DEFAULT NULL)''')
             
             self.con.execute('CREATE INDEX idx_chrom_pos ON variants (chromosome, pos);')
+=======
+            # Drop existing database if needed
+            if res.fetchone():
+                self.con.execute('DROP TABLE `variants`;')
+
+            if not res.fetchone():
+                self.con.execute(   '''CREATE TABLE IF NOT EXISTS `variants`(
+                                    `chromosome` char(2) DEFAULT NULL,
+                                    `pos` int(10) NOT NULL,
+                                    `genotype` varchar(50) DEFAULT NULL,
+                                    `length` int(10) DEFAULT NULL,
+                                    `qname` varchar(50) DEFAULT NULL,
+                                    `is_fetal` tinyint(1) DEFAULT NULL,
+                                    `var_type` tinyint(1) DEFAULT NULL,
+                                    `for_ff` tinyint(1) DEFAULT NULL)''')
+>>>>>>> 526fff2f46d1660bb4e3ecbfac7a4afbe2e8846f
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):

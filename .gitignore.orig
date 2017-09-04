@@ -1,0 +1,11 @@
+*.py[cod]
+*.pyc
+*.o
+*.so
+*.db
+__pycache__/*
+test_files/*
+<<<<<<< HEAD
+*.pyc
+=======
+>>>>>>> 526fff2f46d1660bb4e3ecbfac7a4afbe2e8846f
