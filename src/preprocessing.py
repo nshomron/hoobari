@@ -21,23 +21,18 @@ import parse_gt
 from stderr import *
 import vcfuid
 
-
-
-# --------- functions ----------
+# Note that all database operations should be in their respective module
+# This could drastically simplify operations like multiple database handling (if we keep it)
+from db import Variants
 
 def get_fetal_and_shared_lengths(db_path):
 
-	con = sqlite3.connect(db_path, isolation_level = None)
+    con = Variants(db_path, probe=False)
 
-	shared_df = pd.read_sql_query("select chromosome, qname, length from variants where for_ff=2 and chromosome not in ('X', 'Y');", con).drop_duplicates()
-	fetal_df = pd.read_sql_query("select chromosome, qname, length from variants where for_ff=1 and chromosome not in ('X', 'Y');", con).drop_duplicates()
+    shared_df = con.fetalLengthDist()
+    fetal_df = con.sharedLengthDist()
 
-	shared_lengths = shared_df['length'].value_counts().to_dict()
-	fetal_lengths = fetal_df['length'].value_counts().to_dict()
-
-	con.close()
-
-	return (shared_lengths, fetal_lengths)
+    return (shared_df, fetal_df)
 
 def create_length_distributions(db_path, cores = False, db_prefix = False):
 	'''
