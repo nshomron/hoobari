@@ -21,31 +21,26 @@ import parse_gt
 from stderr import *
 import vcfuid
 
-
-
-# --------- functions ----------
+# Note that all database operations should be in their respective module
+# This could drastically simplify operations like multiple database handling (if we keep it)
+from db import Variants
 
 def get_fetal_and_shared_lengths(db_path):
 
-	con = sqlite3.connect(db_path, isolation_level = None)
+    con = Variants(db_path, probe=False)
 
-	shared_df = pd.read_sql_query("select chromosome, qname, length from variants where for_ff=2 and chromosome not in ('X', 'Y');", con).drop_duplicates()
-	fetal_df = pd.read_sql_query("select chromosome, qname, length from variants where for_ff=1 and chromosome not in ('X', 'Y');", con).drop_duplicates()
+    shared_df = con.fetalLengthDist()
+    fetal_df = con.sharedLengthDist()
 
-	shared_lengths = shared_df['length'].value_counts().to_dict()
-	fetal_lengths = fetal_df['length'].value_counts().to_dict()
-
-	con.close()
-
-	return (shared_lengths, fetal_lengths)
+    return (shared_df, fetal_df)
 
 def create_length_distributions(db_path, cores = False, db_prefix = False):
 	'''
 	variant name - form of chr:position_ref/alt
 	fetal - choose either the fetal allele is suppose to be the ref (if mother = 1/1 and father = 0/0)
 	or the alt (if mother = 0/0 and father = 1/1)
-	'''	
-	
+	'''
+
 	if cores:
 		pool = Pool(int(cores))
 	else:
@@ -53,7 +48,7 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 			pool = Pool(cpu_count() - 1)
 		else:
 			pool = Pool(1)
-	
+
 	db_path = os.path.abspath(db_path)
 	if db_prefix:
 		db_file_regex = re.compile(db_prefix + r'.*\.db')
@@ -66,17 +61,14 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 	pool.close()
 	pool.join()
 
-	shared_dic_list = []
-	fetal_dic_list = []
-	for tup in pooled_results:
-		shared_dic_list.append(tup[0])
-		fetal_dic_list.append(tup[1])
+	fetal_lengths = pd.DataFrame.from_dict({'len':[0], 'count':[0]})
+	shared_lengths = pd.DataFrame.from_dict({'len':[0], 'count':[0]})
+	for res in pooled_results:
+		shared_lengths = shared_lengths.merge(res[0], how='outer')
+		fetal_lengths = fetal_lengths.merge(res[1], how='outer')
 
-	shared_lengths_counter = sum(map(Counter, shared_dic_list), Counter())
-	fetal_lengths_counter = sum(map(Counter, fetal_dic_list), Counter())
-
-	shared_lengths = pd.DataFrame.from_dict(shared_lengths_counter, orient = 'index').sort_index()
-	fetal_lengths = pd.DataFrame.from_dict(fetal_lengths_counter, orient = 'index').sort_index()
+	shared_lengths = shared_lengths.groupby(['len']).sum().sort_index()
+	fetal_lengths = fetal_lengths.groupby(['len']).sum().sort_index()
 
 	return (shared_lengths, fetal_lengths)
 
@@ -85,7 +77,7 @@ def generate_length_distributions_plot(shared_lengths, fetal_lengths, file_name)
 	shared_lengths[shared_lengths.index < 501].plot()
 	fetal_lengths[fetal_lengths.index < 501].plot()
 	plt.savefig(file_name)
-	
+
 def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fraction, window = 3, max_len = 500):
 	'''
 	make a dictionary that shows the fetal fraction at each fragment length
@@ -93,7 +85,7 @@ def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fra
 
 	# generate fetal fraction per fragment length (window) table
 	bins = range(0, max_len, window)
-	
+
 	shared_lengths_list = []
 	for i,c in shared_lengths.iterrows():
 		for j in range(int(c)):
@@ -110,7 +102,7 @@ def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fra
 	fetal_binned = pd.value_counts(fetal_pd_cut, sort = False).to_frame().values.tolist()
 	shared_binned = pd.value_counts(shared_pd_cut, sort = False).to_frame().values.tolist()
 
-	
+
 	fetal_fraction_per_length_df = pd.Series(index = range(0, bins[-1] + 1, 1))
 
 	binned_list_indices = [0] + list(nprepeat(range(len(fetal_binned)), window))
@@ -126,11 +118,11 @@ def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fra
 				fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
 			else:
 				fetal_fraction_per_length_df[i] = fetal_fraction
-	
+
 	return fetal_fraction_per_length_df
 
 def calculate_total_fetal_fraction(shared_lengths, fetal_lengths):
-	
+
 	n_shared = int(shared_lengths.sum())
 	n_fetal = int(fetal_lengths.sum())
 	total_fetal_fraction = (2 * n_fetal) / (n_shared + n_fetal)
@@ -142,7 +134,7 @@ def calculate_err_rate():
 	return err
 
 def run_full_preprocessing(db_path, cores = False, db_prefix = False, window = 3, max_len = 500, plot = False):
-	
+
 	printerr('pre-processing', 'creating length distributions')
 	shared_lengths, fetal_lengths = create_length_distributions(db_path, cores = cores, db_prefix = db_prefix)
 	printerr('pre-processing', 'calculating error rate')
