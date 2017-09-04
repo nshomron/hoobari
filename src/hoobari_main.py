@@ -19,8 +19,7 @@ import vcfuid
 import pprogress
 import position
 import vcf_out
-import preprocessing_lowmem as preprocessing
-# import preprocessing
+import preprocessing
 from arguments import args
 
 sql_connection = sqlite3.connect(args.db)
