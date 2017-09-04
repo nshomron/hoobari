@@ -1,8 +1,9 @@
 import sqlite3
 import os
+import pandas as pd
 
 class Variants(object):
-    def __init__(self, dbpath = './hoobari.db'):
+    def __init__(self, dbpath = './hoobari.db', probe=True):
 
         # create directory
         os.makedirs(os.path.dirname(dbpath), exist_ok=True)
@@ -11,11 +12,12 @@ class Variants(object):
         self.con = sqlite3.connect(dbpath, isolation_level = None)
 
         # Check table's existance
-        res = self.con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='variants';")
+        if probe:
+            res = self.con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='variants';")
 
-        # Drop existing database if needed
-        if res.fetchone():
-            self.con.execute('DROP TABLE `variants`;')
+            # Drop existing database if needed
+            if res.fetchone():
+                self.con.execute('DROP TABLE `variants`;')
 
         if not res.fetchone():
             self.con.execute(   '''CREATE TABLE IF NOT EXISTS `variants`(
@@ -53,6 +55,12 @@ class Variants(object):
         query = query[:-1] + ';'
         self.con.execute(query) ### TODO: check if execute many is better
         #self.con.commit()
+
+    def fetalLengthDist(self):
+        return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by len", self.con)
+
+    def sharedLengthDist(self):
+        return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by len", self.con)
 
     def update_is_fetal(self):
         self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname=(SELECT qname FROM variants WHERE is_fetal=1)')

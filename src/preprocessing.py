@@ -15,27 +15,24 @@ from functools import partial
 import re
 
 # project's
+from json_commands import *
+from pkl_commands import *
 import parse_gt
 from stderr import *
 import vcfuid
 
-
-
-# --------- functions ----------
+# Note that all database operations should be in their respective module
+# This could drastically simplify operations like multiple database handling (if we keep it)
+from db import Variants
 
 def get_fetal_and_shared_lengths(db_path):
 
-	con = sqlite3.connect(db_path, isolation_level = None)
+    con = Variants(db_path, probe=False)
 
-	shared_df = pd.read_sql_query("select qname, length from variants where for_ff=2 and chromosome not in ('X', 'Y');", con).drop_duplicates()
-	fetal_df = pd.read_sql_query("select qname, length from variants where for_ff=1 and chromosome not in ('X', 'Y');", con).drop_duplicates()
+    shared_df = con.fetalLengthDist()
+    fetal_df = con.sharedLengthDist()
 
-	shared_lengths = shared_df['length'].value_counts().to_dict()
-	fetal_lengths = fetal_df['length'].value_counts().to_dict()
-
-	con.close()
-
-	return (shared_lengths, fetal_lengths)
+    return (shared_df, fetal_df)
 
 def create_length_distributions(db_path, cores = False, db_prefix = False):
 	'''
@@ -64,17 +61,14 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 	pool.close()
 	pool.join()
 
-	shared_dic_list = []
-	fetal_dic_list = []
-	for tup in pooled_results:
-		shared_dic_list.append(tup[0])
-		fetal_dic_list.append(tup[1])
+	fetal_lengths = pd.DataFrame.from_dict({'len':[0], 'count':[0]})
+	shared_lengths = pd.DataFrame.from_dict({'len':[0], 'count':[0]})
+	for res in pooled_results:
+		shared_lengths = shared_lengths.merge(res[0], how='outer')
+		fetal_lengths = fetal_lengths.merge(res[1], how='outer')
 
-	shared_lengths_counter = sum(map(Counter, shared_dic_list), Counter())
-	fetal_lengths_counter = sum(map(Counter, fetal_dic_list), Counter())
-
-	shared_lengths = pd.DataFrame.from_dict(shared_lengths_counter, orient = 'index').sort_index()
-	fetal_lengths = pd.DataFrame.from_dict(fetal_lengths_counter, orient = 'index').sort_index()
+	shared_lengths = shared_lengths.groupby(['len']).sum().sort_index()
+	fetal_lengths = fetal_lengths.groupby(['len']).sum().sort_index()
 
 	return (shared_lengths, fetal_lengths)
 
@@ -134,7 +128,7 @@ def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fra
 			else:
 				fetal_fraction_per_length_df[i] = ff
 		else:
-			if i > 0:
+			if i == 0:
 				fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
 			else:
 				fetal_fraction_per_length_df[i] = fetal_fraction
