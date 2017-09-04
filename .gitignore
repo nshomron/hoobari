@@ -3,3 +3,4 @@
 *.so
 *.db
 __pycache__/*
+test_files/*
