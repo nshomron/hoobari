@@ -14,7 +14,6 @@ from collections import OrderedDict
 import parse_gt
 from stderr import *
 import vcfuid
-import pprogress
 import position
 import vcf_out
 import preprocessing

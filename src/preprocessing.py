@@ -15,8 +15,6 @@ from functools import partial
 import re
 
 # project's
-from json_commands import *
-from pkl_commands import *
 import parse_gt
 from stderr import *
 import vcfuid
@@ -65,7 +63,7 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 	fetal_lengths = pd.DataFrame.from_dict({'len':[1], 'count':[0]})
 	for tup in pooled_results:
 		shared_lengths = shared_lengths.merge(tup[0], how='outer')
-		fetal_lengths = fetal_lengths.merge(tupp[1], how='outer')
+		fetal_lengths = fetal_lengths.merge(tup[1], how='outer')
 
 	#TODO: When do I sort, in query or after summing
 	shared_lengths = shared_lengths.groupby(['len']).sum()
