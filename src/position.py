@@ -34,7 +34,7 @@ def calculate_priors(maternal_gt, paternal_gt):
 	==>
 	[0.5f, 0.5, 0.5(1-f)]
 	'''
-	
+
 	# TODO: de-novo mutation rate per site
 	# TODO: de-novo mutation rate per
 	# TODO: add error rate to prior
@@ -79,10 +79,10 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 		frag_i_likelihoods = np.array([	1*f + p_maternal_ref*(1-f), # fetal is 0/0
 						0.5*f + p_maternal_ref*(1-f), # fetal is 0/1
 						0*f + p_maternal_ref*(1-f)]) # fetal is 1/1
-		
+
 	else:
 		frag_i_likelihoods = np.array([1, 1, 1])
-	
+
 	return frag_i_likelihoods
 
 def calculate_likelihoods(
@@ -103,7 +103,7 @@ def calculate_likelihoods(
 	'''
 
 	chrom, pos, ref, alt = rec.CHROM.replace('chr', ''), str(rec.POS), rec.REF, str(rec.ALT[0])
-	
+
 	variant_len = len(ref) - len(alt)
 
 	printverbose(chrom, pos)
@@ -114,7 +114,7 @@ def calculate_likelihoods(
 	if (len(pos_data) > 0) and (maternal_gt in valid_gts):
 
 		for frag_genotype, frag_length, frag_is_fetal in pos_data:
-			
+
 			frag_length = max(int(frag_length) - variant_len, 0)
 
 			# get fetal fraction
@@ -125,7 +125,7 @@ def calculate_likelihoods(
 				ff = fetal_fractions_df[frag_length]
 			else:
 				ff = total_fetal_fraction
-			
+
 			frag_i_likelihoods = calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, ff, err_rate)
 
 			#frag_i_likelihoods[frag_i_likelihoods == 0] = 0.003
@@ -150,7 +150,7 @@ def calculate_phred(joint_probabilities):
 	return libphred.calculatePhred(cdubs)
 
 def simple_qual_calculation(posteriors):
-	
+
 	if posteriors[0] == 0:
 		return '1e+06'
 	else:
@@ -164,13 +164,13 @@ def simple_qual_calculation(posteriors):
 			return round(qual,2)
 
 def likelihoods_to_phred_scale(likelihoods):
-	
+
 	log10_likelihoods = likelihoods / np.log(10)
 	normalized_log10_likelihoods = log10_likelihoods - np.max(log10_likelihoods)
 	phred_scaled_normalized_likelihoods = -10 * (normalized_log10_likelihoods)
 	phred_scaled_normalized_likelihoods[phred_scaled_normalized_likelihoods == -0.0] = 0
 	printverbose('normalized_likelihoods', phred_scaled_normalized_likelihoods)
-	
+
 	return phred_scaled_normalized_likelihoods
 
 def calculate_posteriors(var_priors, var_likelihoods):
@@ -179,7 +179,7 @@ def calculate_posteriors(var_priors, var_likelihoods):
 	# sum priors and likelihoods
 	# if there are no priors (for instance if parental genotypes at positions are missing),
 	# take only likelihoods
-	
+
 
 	# parents genotypes might give a prediction but if it's not supported by cfdna it's only indirect - good or not? not for de-novo...
 	# it is good for recessive disease!

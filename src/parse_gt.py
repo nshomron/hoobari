@@ -52,7 +52,7 @@ def parse(vcf_file_path, from_pkl = False, pkl_path = False):
 				for s in range(len(samples)):
 					gt = str_to_int(record.genotype(samples[s]).data.GT)
 					genotypes.append(gt)
-				
+
 				# flag: snp - 0 , indel - 1
 				if record.INFO['TYPE'][0] in ('ins', 'del'):
 					indel = 1
@@ -62,9 +62,9 @@ def parse(vcf_file_path, from_pkl = False, pkl_path = False):
 				line = variant_name + genotypes + [indel]
 
 				vcf_list.append(line)
-				
+
 				progress_index = pprogress.pprogress(progress_index, index_length, percents)
-			
+
 			vcf_array = np.array(vcf_list)
 			vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])
 			pkl_save(vcf_df, pkl_path)
@@ -78,7 +78,7 @@ def parse_split(chr_vcfs_dir_path, files_regex):
 
 	vcf_list = []
 	for vcf_file in vcf_files:
-		
+
 		printerr('parsing ' + vcf_file + '...')
 		vcf_file_path = os.path.join(chr_vcfs_dir_path, vcf_file)
 		index_length = pprogress.get_file_length(vcf_file_path)
@@ -99,7 +99,7 @@ def parse_split(chr_vcfs_dir_path, files_regex):
 
 			vcf_list.append(line)
 			progress_index = pprogress.pprogress(progress_index, index_length)
-		
+
 		vcf_array = np.array(vcf_list)
 		vcf_df = pd.DataFrame(data = vcf_array[1:,1:], index = vcf_array[1:,0], columns = vcf_array[0,1:])
 	return vcf_df
