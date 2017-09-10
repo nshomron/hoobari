@@ -59,15 +59,15 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 	pool.close()
 	pool.join()
 
-	shared_lengths = pd.DataFrame.from_dict({'len':[1], 'count':[0]})
-	fetal_lengths = pd.DataFrame.from_dict({'len':[1], 'count':[0]})
-	for tup in pooled_results:
+	shared_lengths = pooled_results[0][0]
+	fetal_lengths = pooled_results[0][1]
+	for tup in pooled_results[1:]:
 		shared_lengths = shared_lengths.merge(tup[0], how='outer')
 		fetal_lengths = fetal_lengths.merge(tup[1], how='outer')
 
-	#TODO: When do I sort, in query or after summing
-	shared_lengths = shared_lengths.groupby(['len']).sum()
-	fetal_lengths = fetal_lengths.groupby(['len']).sum()
+    #TODO: Can I disable sorting?
+	shared_lengths = shared_lengths.groupby(by='length').sum()
+	fetal_lengths = fetal_lengths.groupby(by='length').sum()
 
 	return (shared_lengths, fetal_lengths)
 
@@ -152,6 +152,8 @@ def run_full_preprocessing(db_path, cores = False, db_prefix = False, window = 3
 
 	printerr('pre-processing', 'creating length distributions')
 	shared_lengths, fetal_lengths = create_length_distributions(db_path, cores = cores, db_prefix = db_prefix)
+	pickle.dump(shared_lengths, open('shared.pkl','wb'))
+	pickle.dump(fetal_lengths, open('fetal.pkl','wb'))
 	printerr('pre-processing', 'calculating error rate')
 	err_rate = calculate_err_rate()
 	printerr('pre-processing', 'calculating total fetal fraction')

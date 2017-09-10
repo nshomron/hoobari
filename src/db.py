@@ -59,7 +59,7 @@ class Variants(object):
     #TODO: Consider qname in query
     #TODO: When do I sort, in query or after summing
     def fetalLengthDist(self):
-        return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by len order by len desc", self.con)
+        return pd.read_sql_query("select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`", self.con)
 
     def sharedLengthDist(self):
-        return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by len order by len desc", self.con)
+        return pd.read_sql_query("select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`", self.con)
