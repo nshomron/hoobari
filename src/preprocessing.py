@@ -152,8 +152,6 @@ def run_full_preprocessing(db_path, cores = False, db_prefix = False, window = 3
 
 	printerr('pre-processing', 'creating length distributions')
 	shared_lengths, fetal_lengths = create_length_distributions(db_path, cores = cores, db_prefix = db_prefix)
-	pickle.dump(shared_lengths, open('shared.pkl','wb'))
-	pickle.dump(fetal_lengths, open('fetal.pkl','wb'))
 	printerr('pre-processing', 'calculating error rate')
 	err_rate = calculate_err_rate()
 	printerr('pre-processing', 'calculating total fetal fraction')
