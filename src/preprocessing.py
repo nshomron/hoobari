@@ -15,8 +15,6 @@ from functools import partial
 import re
 
 # project's
-from json_commands import *
-from pkl_commands import *
 import parse_gt
 from stderr import *
 import vcfuid
@@ -29,8 +27,8 @@ def get_fetal_and_shared_lengths(db_path):
 
 	con = sqlite3.connect(db_path, isolation_level = None)
 
-	shared_df = pd.read_sql_query("select chromosome, qname, length from variants where for_ff=2 and chromosome not in ('X', 'Y');", con).drop_duplicates()
-	fetal_df = pd.read_sql_query("select chromosome, qname, length from variants where for_ff=1 and chromosome not in ('X', 'Y');", con).drop_duplicates()
+	shared_df = pd.read_sql_query("select qname, length from variants where for_ff=2 and chromosome not in ('X', 'Y');", con).drop_duplicates()
+	fetal_df = pd.read_sql_query("select qname, length from variants where for_ff=1 and chromosome not in ('X', 'Y');", con).drop_duplicates()
 
 	shared_lengths = shared_df['length'].value_counts().to_dict()
 	fetal_lengths = fetal_df['length'].value_counts().to_dict()

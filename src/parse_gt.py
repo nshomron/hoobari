@@ -8,8 +8,6 @@ import vcf
 # project's
 from stderr import *
 import vcfuid
-import pprogress
-from pkl_commands import *
 
 def str_to_int(str_gt):
 	if str_gt in ('0/0', '0/1', '1/1'):

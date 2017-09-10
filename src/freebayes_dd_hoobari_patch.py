@@ -118,7 +118,7 @@ else:
 vardb = db.Variants(dbpath = dbpath)
 
 for line in sys.stdin:
-	
+	# print(line, file = sys.stderr)
 	if line.startswith('position: '):
 		initiate_var = True
 		line = line.split()
@@ -142,33 +142,43 @@ for line in sys.stdin:
 		isize = template_lengths_at_position_dic[qname]
 		
 		position_list.append([geno, isize, qname])
+		# print(position_list)
 
-	elif line.startswith('genotype alleles:'):
-			
-			alleles = line.rstrip().split('|')
+	elif line.startswith('genotype alleles:') and not initiate_var:
+		
+		alleles = line.rstrip().split('|')
+		print(var,alleles, file = sys.stderr)
+		# print(position_list)
+		if len(alleles) <= 2: #TODO: more than bi-allelic
+			allele_dic = {}
+			for allele in alleles:
+				allele_split = allele.replace('genotype alleles: ', '').split(':')
+				allele_dic[allele_split[0]] = allele_split[-1]
+			#ref, alt = former_line.split('\t')[3:5]
+			ref = allele_dic['reference']
+			var_type, alt = get_var_type(allele_dic)
 
-			if len(alleles) <= 2: #TODO: more than bi-allelic
-				allele_dic = {}
-				for allele in alleles:
-					allele_split = allele.replace('genotype alleles: ', '').split(':')
-					allele_dic[allele_split[0]] = allele_split[-1]
-				#ref, alt = former_line.split('\t')[3:5]
-				ref = allele_dic['reference']
-				var_type, alt = get_var_type(allele_dic)
-			else:
-				initiate_var = True
-
-	elif line.startswith('finished position'):
-		if not initiate_var:
-			
 			for l in position_list:
 				genotype = l[0]
 				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
 				for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
 				l += [is_fetal, var_type, for_ff]
 
+			# print(position_list)
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
-			initiate_var = True
+
+		initiate_var = True
+	# elif line.startswith('finished position'):
+		#if not initiate_var:
+			
+			# for l in position_list:
+			# 	genotype = l[0]
+			# 	is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
+			# 	for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
+			# 	l += [is_fetal, var_type, for_ff]
+
+			# # print(position_list)
+			# vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
 
 
 bam_reader.close()

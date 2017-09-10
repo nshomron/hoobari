@@ -38,7 +38,7 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 			'##source=hoobari',
 			'##phasing=none', # phasing is not yet supported
 			'##reference=' + cfdna_vcf_reader.metadata['reference'],
-			'##commandline="' + input_command,
+			'##commandline="' + input_command + '"',
 			sep = '\n',
 			out_path = output_path)
 	

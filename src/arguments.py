@@ -19,6 +19,7 @@ parser.add_argument("-d", "--db", default = os.path.join(tmp_dir, 'hoobari.db'),
 parser.add_argument("-D", "--db_prefix", default = False, help = '''If hoobari is run split, all sqlite databases are expected to be in the
 									same location as the processed database, sharing some unique prefix''')
 parser.add_argument("-@", "--cores", default = False, help = 'number of cores to run pre-processing when run split')
+parser.add_argument("-pkl", "--preprocessing_pkl", default = False, help = 'load pre-processing results from pkl, or save as pkl if one cannot be found')
 parser.add_argument("-model", "--model", default = 'origin', help = '	model for likelihoods calculation. possible values: "simple" \
 									(Bayesian model based only on fetal fraction and parental genotypes), \
 									"lengths" (use different fetal fraction per fragment length), \
