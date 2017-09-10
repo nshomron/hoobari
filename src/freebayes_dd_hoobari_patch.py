@@ -25,6 +25,8 @@ args = parser.parse_args()
 # ------------------------------
 
 # --------- functions ---------
+
+
 def get_parental_genotypes(parents_reader, maternal_sample_name, paternal_sample_name, chrom, position):
 	n_rec = 0
 	for rec in parents_reader.fetch(chrom, int(position) - 1, int(position)):
@@ -33,7 +35,7 @@ def get_parental_genotypes(parents_reader, maternal_sample_name, paternal_sample
 		n_rec += 1
 		if n_rec > 1:
 			sys.exit('more than one parental variant in the same position')
-		
+
 	return maternal_gt, paternal_gt
 
 def get_reads_tlen(bam_reader, chrom, position):
@@ -54,7 +56,7 @@ def get_fetal_allele_type(maternal_gt, paternal_gt):
 		return False
 
 def is_fetal_fragment(genotype, ref, alt, fetal_allele = False):
-	
+
 	if ((genotype == ref) and fetal_allele == 'ref') or ((genotype == alt) and fetal_allele == 'alt'):
 		return 1
 	else:
@@ -62,12 +64,12 @@ def is_fetal_fragment(genotype, ref, alt, fetal_allele = False):
 
 
 def get_var_type(alleles_dic):
-	
+
 	'''
 	code	type
 	----	----
 	1	snp
-	2	mnp 
+	2	mnp
 	3	insertion
 	4	deletion
 	5	complex
@@ -81,12 +83,12 @@ def get_var_type(alleles_dic):
 def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal):
 	var_in_ff_positions = (maternal_gt == '0/0' and paternal_gt == '1/1') or (maternal_gt == '1/1' and paternal_gt == '0/0')
 	var_is_snp = var_type == 1
-	
+
 	if var_in_ff_positions and var_is_snp:
 		if is_fetal == 1:
 			return 1
 		elif is_fetal == 0:
-			return 2 
+			return 2
 	else:
 		return 0 # not for ff
 
@@ -118,7 +120,7 @@ else:
 vardb = db.Variants(dbpath = dbpath)
 
 for line in sys.stdin:
-	
+
 	if line.startswith('position: '):
 		initiate_var = True
 		line = line.split()
@@ -140,11 +142,11 @@ for line in sys.stdin:
 		read = line[4].split(':')
 		qname = ':'.join(read[1:-10])
 		isize = template_lengths_at_position_dic[qname]
-		
+
 		position_list.append([geno, isize, qname])
 
 	elif line.startswith('genotype alleles:'):
-			
+
 			alleles = line.rstrip().split('|')
 
 			if len(alleles) <= 2: #TODO: more than bi-allelic
@@ -160,7 +162,7 @@ for line in sys.stdin:
 
 	elif line.startswith('finished position'):
 		if not initiate_var:
-			
+
 			for l in position_list:
 				genotype = l[0]
 				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
@@ -170,14 +172,12 @@ for line in sys.stdin:
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
 			initiate_var = True
 
+# Create length distributions for input
+vardb.createDistTable()
 
 bam_reader.close()
-vardb.con.commit()
-vardb.con.close()
 
 
 # TODO: when the db is complete - each qname where is_fetal=1, all appearances of this qname in the db will change to 1
-# TODO: problem! needs to know also if fetal only by genotype (not by other fragments) - 
+# TODO: problem! needs to know also if fetal only by genotype (not by other fragments) -
 # for_ff_fetal, for_ff_shared
-
-

@@ -54,12 +54,30 @@ class Variants(object):
 
         query = query[:-1] + ';'
         self.con.execute(query) ### TODO: check if execute many is better
-        #self.con.commit()
+        self.con.commit()
 
-    #TODO: Consider qname in query
-    #TODO: When do I sort, in query or after summing
     def fetalLengthDist(self):
-        return pd.read_sql_query("select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`", self.con)
+        return pd.read_sql_query("select * from fetal_lengths", self.con)
 
     def sharedLengthDist(self):
-        return pd.read_sql_query("select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`", self.con)
+        return pd.read_sql_query("select * from shared_lengths", self.con)
+
+    # Create length distribution table
+    def createDistTable(self):
+        self.con.execute('''
+        create table fetal_lengths(
+            `length` int(5),
+            `count`  int(5)
+        )
+        ''')
+
+        self.con.execute('''
+        create table shared_lengths(
+            `length` int(5),
+            `count`  int(5)
+        )
+        ''')
+
+        self.con.execute("insert into fetal_lengths select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`")
+        self.con.execute("insert into shared_lengths select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`")
+        self.con.commit()
