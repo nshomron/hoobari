@@ -174,7 +174,6 @@ for line in sys.stdin:
 
 # Create length distributions for input
 vardb.createDistTable()
-
 bam_reader.close()
 
 
