@@ -68,7 +68,7 @@ class Variants(object):
     # Create length distribution table
     def createDistTable(self):
         self.con.execute('''
-        create table fetal_lengths(
+        create table if not exists fetal_lengths(
             `length` int NOT NULL,
             `count`  int NOT NULL DEFAULT '0',
             PRIMARY KEY (`length`)
@@ -76,7 +76,7 @@ class Variants(object):
         ''')
 
         self.con.execute('''
-        create table shared_lengths(
+        create table if not exists shared_lengths(
             `length` int(5) NOT NULL,
             `count`  int(5) NOT NULL DEFAULT '0',
             PRIMARY KEY (`length`)
