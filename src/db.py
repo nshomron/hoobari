@@ -70,7 +70,7 @@ class Variants(object):
         self.con.execute('''
         create table fetal_lengths(
             `length` int NOT NULL,
-            `count`  int NOT NULL DEFAULT '0'
+            `count`  int NOT NULL DEFAULT '0',
             PRIMARY KEY (`length`),
             UNIQUE KEY `length` (`length`)
         )
@@ -79,7 +79,7 @@ class Variants(object):
         self.con.execute('''
         create table shared_lengths(
             `length` int(5) NOT NULL,
-            `count`  int(5) NOT NULL DEFAULT '0'
+            `count`  int(5) NOT NULL DEFAULT '0',
             PRIMARY KEY (`length`),
             UNIQUE KEY `length` (`length`)
         )
