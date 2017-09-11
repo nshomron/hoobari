@@ -60,7 +60,31 @@ class Variants(object):
         return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by len", self.con)
 
     def sharedLengthDist(self):
+<<<<<<< 9fb2af6a7dd3367ee9066cb663ffac6ed6e9267e
         return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by len", self.con)
+=======
+        return pd.read_sql_query("select * from shared_lengths", self.con)
+
+    # Create length distribution table
+    def createDistTable(self):
+        self.con.execute('''
+        create table fetal_lengths(
+            `length` int NOT NULL,
+            `count`  int NOT NULL DEFAULT '0'
+            PRIMARY KEY (`length`),
+            UNIQUE KEY `length` (`length`)
+        )
+        ''')
+
+        self.con.execute('''
+        create table shared_lengths(
+            `length` int(5) NOT NULL,
+            `count`  int(5) NOT NULL DEFAULT '0'
+            PRIMARY KEY (`length`),
+            UNIQUE KEY `length` (`length`)
+        )
+        ''')
+>>>>>>> Removed unsupported unsigned type
 
     def update_is_fetal(self):
         self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname=(SELECT qname FROM variants WHERE is_fetal=1)')
