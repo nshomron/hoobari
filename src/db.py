@@ -68,8 +68,7 @@ class Variants(object):
         create table fetal_lengths(
             `length` int NOT NULL,
             `count`  int NOT NULL DEFAULT '0',
-            PRIMARY KEY (`length`),
-            UNIQUE KEY `length` (`length`)
+            PRIMARY KEY (`length`)
         )
         ''')
 
@@ -77,8 +76,7 @@ class Variants(object):
         create table shared_lengths(
             `length` int(5) NOT NULL,
             `count`  int(5) NOT NULL DEFAULT '0',
-            PRIMARY KEY (`length`),
-            UNIQUE KEY `length` (`length`)
+            PRIMARY KEY (`length`)
         )
         ''')
 
