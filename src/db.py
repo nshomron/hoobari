@@ -53,3 +53,6 @@ class Variants(object):
         query = query[:-1] + ';'
         self.con.execute(query) ### TODO: check if execute many is better
         #self.con.commit()
+
+    def update_is_fetal(self):
+        self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname=(SELECT qname FROM variants WHERE is_fetal=1)')

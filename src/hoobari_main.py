@@ -25,18 +25,18 @@ sql_connection = sqlite3.connect(args.db)
 
 # pre-processing
 if os.path.isfile(args.preprocessing_pkl):
-	time.sleep(5)
-	with open(args.preprocessing_pkl, 'r') as f:
+	time.sleep(5) # in case the file have just been created and is still being written
+	with open(args.preprocessing_pkl, 'rb') as f:
 		err_rate, total_fetal_fraction, fetal_fractions_df = pickle.load(f)
 else:
 	err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_preprocessing(	args.db,
 													cores = args.cores,
 													db_prefix = args.db_prefix,
-													window = 3,
+													window = args.window,
 													max_len = 500,
 													plot = args.plot_lengths)
 	if args.preprocessing_pkl:
-		with open(args.preprocessing_pkl, 'r') as f:
+		with open(args.preprocessing_pkl, 'wb') as f:
 			pickle.dump((err_rate, total_fetal_fraction, fetal_fractions_df), f)
 
 # create vcf files readers

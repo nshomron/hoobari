@@ -119,6 +119,7 @@ def calculate_likelihoods(
 
 			# get fetal fraction
 			if (model == 'origin') and (frag_is_fetal == 1):
+				printverbose('fragment was marked as fetal by another variant')
 				ff = 1 - err_rate
 			elif (model in ('lengths', 'origin')) and (frag_length in fetal_fractions_df.index.values):
 				ff = fetal_fractions_df[frag_length]

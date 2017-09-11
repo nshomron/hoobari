@@ -180,13 +180,14 @@ for line in sys.stdin:
 			# # print(position_list)
 			# vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
 
+vardb.update_is_fetal()
 
 bam_reader.close()
 vardb.con.commit()
 vardb.con.close()
 
 
-# TODO: when the db is complete - each qname where is_fetal=1, all appearances of this qname in the db will change to 1
+# TODO: when the db is complete - each qname where is_fetal=1, all appearances of this qname in the db will change to 1 - V
 # TODO: problem! needs to know also if fetal only by genotype (not by other fragments) - 
 # for_ff_fetal, for_ff_shared
 
