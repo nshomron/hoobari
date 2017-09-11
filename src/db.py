@@ -66,15 +66,19 @@ class Variants(object):
     def createDistTable(self):
         self.con.execute('''
         create table fetal_lengths(
-            `length` int(5),
-            `count`  int(5)
+            `length` int(5) unsigned NOT NULL,
+            `count`  int(5) NOT NULL DEFAULT '0'
+            PRIMARY KEY (`length`),
+            UNIQUE KEY `length` (`length`)
         )
         ''')
 
         self.con.execute('''
         create table shared_lengths(
-            `length` int(5),
-            `count`  int(5)
+            `length` int(5) unsigned NOT NULL,
+            `count`  int(5) NOT NULL DEFAULT '0'
+            PRIMARY KEY (`length`),
+            UNIQUE KEY `length` (`length`)
         )
         ''')
 
