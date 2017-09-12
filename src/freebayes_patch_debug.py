@@ -21,9 +21,9 @@ parser.add_argument("-parents_vcf", "--parents_vcf", help = 'bgzipped vcf of par
 parser.add_argument("-m", "--maternal_sample_name", help = 'maternal sample name as appears in parents vcf')
 parser.add_argument("-p", "--paternal_sample_name", help = 'paternal sample name as appears in parents vcf')
 parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name, or prefix if hoobari is run split')
+parser.add_argument("-i", "--input_debug", help = 'Freebayes debug output')
 args = parser.parse_args()
 # ------------------------------
-
 # --------- functions ---------
 
 
@@ -117,10 +117,14 @@ if args.region:
 	dbpath = os.path.join(args.tmp_dir, args.db + '.' + str(args.region) + '.db')
 else:
 	dbpath = os.path.join(args.tmp_dir, args.db + '.db')
-
 vardb = db.Variants(dbpath = dbpath)
 
-for line in sys.stdin:
+debug=open(args.input_debug, 'r')
+
+for line in debug:
+
+	# Remove newline characters
+	line=line.replace('\n','')
 
 	if line.startswith('position: '):
 		initiate_var = True
