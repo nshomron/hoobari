@@ -117,9 +117,12 @@ if args.region:
 	dbpath = os.path.join(args.tmp_dir, args.db + '.' + str(args.region) + '.db')
 else:
 	dbpath = os.path.join(args.tmp_dir, args.db + '.db')
+
 vardb = db.Variants(dbpath = dbpath)
 
 for line in sys.stdin:
+	# Remove newline characters
+	line=line.replace('\n','')
 
 	if line.startswith('position: '):
 		initiate_var = True
