@@ -118,7 +118,7 @@ else:
 vardb = db.Variants(dbpath = dbpath)
 
 for line in sys.stdin:
-	# print(line, file = sys.stderr)
+	print(line, file = sys.stderr)
 	if line.startswith('position: '):
 		initiate_var = True
 		line = line.split()

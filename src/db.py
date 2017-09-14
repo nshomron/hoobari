@@ -55,4 +55,4 @@ class Variants(object):
         #self.con.commit()
 
     def update_is_fetal(self):
-        self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname=(SELECT qname FROM variants WHERE is_fetal=1)')
+        self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname in (SELECT qname FROM variants WHERE is_fetal=1)')

@@ -84,7 +84,9 @@ def generate_length_distributions_plot(shared_lengths, fetal_lengths, file_name)
 	fetal_lengths[fetal_lengths.index < 501].plot()
 	plt.savefig(file_name)
 	
-def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fraction, window = 3, max_len = 500):
+
+
+def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fraction, err_rate, window = 3, max_len = 500):
 	'''
 	make a dictionary that shows the fetal fraction at each fragment length
 	'''
@@ -124,13 +126,14 @@ def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fra
 		idx_in_binned = binned_list_indices[i]
 		fetal = fetal_binned[idx_in_binned][0]
 		shared = shared_binned[idx_in_binned][0]
-		if fetal > 10 and shared > 10:
+		if fetal > 5 and shared > 5:
 			ff = (2 * fetal) / (shared + fetal)
 			if ff > 1:
-				if i > 0:
-					fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
-				else:
-					fetal_fraction_per_length_df[i] = fetal_fraction
+				fetal_fraction_per_length_df[i] = 1 - err_rate
+				# if i > 0:
+				# 	fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
+				# else:
+				# 	fetal_fraction_per_length_df[i] = fetal_fraction
 			else:
 				fetal_fraction_per_length_df[i] = ff
 		else:
@@ -138,6 +141,8 @@ def create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, fetal_fra
 				fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
 			else:
 				fetal_fraction_per_length_df[i] = fetal_fraction
+
+	# TODO: rewrite a simpler version of this function
 
 	printverbose(fetal_fraction_per_length_df)
 	
@@ -164,7 +169,7 @@ def run_full_preprocessing(db_path, cores = False, db_prefix = False, window = 3
 	printerr('pre-processing', 'calculating total fetal fraction')
 	total_fetal_fraction = calculate_total_fetal_fraction(shared_lengths, fetal_lengths)
 	printerr('pre-processing', 'calculating fetal fraction per read template length')
-	fetal_fractions_df = create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, total_fetal_fraction, window = window, max_len = max_len)
+	fetal_fractions_df = create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, total_fetal_fraction, err_rate, window = window, max_len = max_len)
 	if plot:
 		plot_file_name = 'length_distributions.png'
 		printerr('pre-processing', 'saving length distributions plot as ')
