@@ -17,13 +17,9 @@ from (select min(`length`) as `length`
       group by `qname`) as qunique 
 group by `length`;
 
-commit;
-
 insert into shared_lengths 
 select `length`, count(*) as `count` 
 from (select min(`length`) as `length` 
       from variants where for_ff=2 and chromosome not in ('X', 'Y') 
       group by `qname`) as qunique 
 group by `length`;
-
-commit;
