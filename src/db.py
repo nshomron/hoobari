@@ -58,11 +58,11 @@ class Variants(object):
 
     def fetalLengthDist(self):
         # return pd.read_sql_query("select * from fetal_lengths", self.con)
-        return pd.read_sql_query("select `length`, count(*) as `count` from (select distinct(qname), `length` from variants where for_ff=1 and chromosome not in ('X', 'Y')) group by `length`", self.con)
+        return pd.read_sql_query("select `length`, count(*) as `count` from (select distinct(qname), `length` from variants where for_ff=1 and chromosome not in ('X', 'Y')) group by `length`", self.con, index_col='length')
 
     def sharedLengthDist(self):
         # return pd.read_sql_query("select * from shared_lengths", self.con)
-        return pd.read_sql_query("select `length`, count(*) as `count` from (select distinct(qname), `length` from variants where for_ff=2 and chromosome not in ('X', 'Y')) group by `length`", self.con)
+        return pd.read_sql_query("select `length`, count(*) as `count` from (select distinct(qname), `length` from variants where for_ff=2 and chromosome not in ('X', 'Y')) group by `length`", self.con, index_col='length')
 
     # Create length distribution table
     def createDistTable(self):
