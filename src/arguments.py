@@ -14,11 +14,13 @@ parser.add_argument("-t", "--tmp_dir", default = tmp_dir, help = 'Directory for 
 parser.add_argument("-o", "--vcf_output", default = False, help = 'path for vcf output')
 parser.add_argument("-r", "--region", default = False, help = "run on a specific region as explained in pyvcf documentation")
 parser.add_argument("-v", "--verbosity", action = 'store_true', help = "Prints more detailed debugging information")
+parser.add_argument("-w", "--window", default = 3, help = "Window size for lengths")
 parser.add_argument("-l", "--plot_lengths", default = False, action = 'store_true', help = "Creates a plot of the length distributions")
 parser.add_argument("-d", "--db", default = os.path.join(tmp_dir, 'hoobari.db'), help = 'db path')
 parser.add_argument("-D", "--db_prefix", default = False, help = '''If hoobari is run split, all sqlite databases are expected to be in the
 									same location as the processed database, sharing some unique prefix''')
 parser.add_argument("-@", "--cores", default = False, help = 'number of cores to run pre-processing when run split')
+parser.add_argument("-pkl", "--preprocessing_pkl", default = False, help = 'load pre-processing results from pkl, or save as pkl if one cannot be found')
 parser.add_argument("-model", "--model", default = 'origin', help = '	model for likelihoods calculation. possible values: "simple" \
 									(Bayesian model based only on fetal fraction and parental genotypes), \
 									"lengths" (use different fetal fraction per fragment length), \

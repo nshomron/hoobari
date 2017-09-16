@@ -10,6 +10,8 @@ import vcf, vcf.utils
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
+import pickle
+import time
 # project's
 import parse_gt
 from stderr import *
@@ -22,19 +24,27 @@ from arguments import args
 sql_connection = sqlite3.connect(args.db)
 
 # pre-processing
-err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_preprocessing(	args.db,
-												cores = args.cores,
-												db_prefix = args.db_prefix,
-												window = 3,
-												max_len = 500,
-												plot = args.plot_lengths)
+if os.path.isfile(args.preprocessing_pkl):
+	time.sleep(5) # in case the file have just been created and is still being written
+	with open(args.preprocessing_pkl, 'rb') as f:
+		err_rate, total_fetal_fraction, fetal_fractions_df = pickle.load(f)
+else:
+	err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_preprocessing(	args.db,
+													cores = args.cores,
+													db_prefix = args.db_prefix,
+													window = args.window,
+													max_len = 500,
+													plot = args.plot_lengths)
+	if args.preprocessing_pkl:
+		with open(args.preprocessing_pkl, 'wb') as f:
+			pickle.dump((err_rate, total_fetal_fraction, fetal_fractions_df), f)
 
 # create vcf files readers
 cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
 parents_reader = vcf.Reader(filename = args.parents_vcf)
 
 # print header
-input_command = ' '.join(sys.argv) + '"'
+input_command = ' '.join(sys.argv)
 vcf_out.make_header(	cfdna_reader,
 			parents_reader,
 			input_command,
