@@ -12,14 +12,12 @@ create table if not exists shared_lengths(
 
 insert into fetal_lengths 
 select `length`, count(*) as `count` 
-from (select min(`length`) as `length` 
-      from variants where for_ff=1 and chromosome not in ('X', 'Y') 
-      group by `qname`) as qunique 
+from (select distinct(qname), `length` 
+    from variants where for_ff=1 and chromosome not in ('X', 'Y')) 
 group by `length`;
 
 insert into shared_lengths 
 select `length`, count(*) as `count` 
-from (select min(`length`) as `length` 
-      from variants where for_ff=2 and chromosome not in ('X', 'Y') 
-      group by `qname`) as qunique 
+from (select distinct(qname), `length` 
+    from variants where for_ff=2 and chromosome not in ('X', 'Y')) 
 group by `length`;

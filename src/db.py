@@ -57,12 +57,10 @@ class Variants(object):
         self.con.commit()
 
     def fetalLengthDist(self):
-        # return pd.read_sql_query("select * from fetal_lengths", self.con)
-        return pd.read_sql_query("select `length`, count(*) as `count` from (select distinct(qname), `length` from variants where for_ff=1 and chromosome not in ('X', 'Y')) group by `length`", self.con)
+        return pd.read_sql_query("select * from fetal_lengths", self.con)
 
     def sharedLengthDist(self):
-        # return pd.read_sql_query("select * from shared_lengths", self.con)
-        return pd.read_sql_query("select `length`, count(*) as `count` from (select distinct(qname), `length` from variants where for_ff=2 and chromosome not in ('X', 'Y')) group by `length`", self.con)
+        return pd.read_sql_query("select * from shared_lengths", self.con)
 
     # Create length distribution table
     def createDistTable(self):
@@ -82,10 +80,22 @@ class Variants(object):
         )
         ''')
 
-        self.con.execute("insert into fetal_lengths select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`")
-        self.con.execute("insert into shared_lengths select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`")
-
+        self.con.execute("""
+            insert into fetal_lengths
+            select `length`, count(*) as `count`
+            from (select distinct(qname), `length`
+                from variants where for_ff=1 and chromosome not in ('X', 'Y'))
+            group by `length`
+        """)
+        self.con.execute("""
+            insert into shared_lengths
+            select `length`, count(*) as `count`
+            from (select distinct(qname), `length`
+                from variants where for_ff=2 and chromosome not in ('X', 'Y'))
+            group by `length`
+        """)
         self.con.commit()
+
     def update_is_fetal(self):
         self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname=(SELECT qname FROM variants WHERE is_fetal=1)')
         self.con.commit()
