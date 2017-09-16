@@ -19,7 +19,6 @@ class Variants(object):
             if res.fetchone():
                 self.con.execute('DROP TABLE `variants`;')
 
-<<<<<<< HEAD
             if not res.fetchone():
                 self.con.execute(   '''CREATE TABLE IF NOT EXISTS `variants`(
                                     `chromosome` char(2) DEFAULT NULL,
@@ -32,20 +31,6 @@ class Variants(object):
                                     `for_ff` tinyint(1) DEFAULT NULL)''')
 
                 self.con.execute('CREATE INDEX idx_chrom_pos ON variants (chromosome, pos);')
-=======
-        if not res.fetchone():
-            self.con.execute(   '''CREATE TABLE IF NOT EXISTS `variants`(
-                                `chromosome` char(2) DEFAULT NULL,
-                                `pos` int(10) NOT NULL,
-                                `genotype` varchar(50) DEFAULT NULL,
-                                `length` int(10) DEFAULT NULL,
-                                `qname` varchar(50) DEFAULT NULL,
-                                `is_fetal` tinyint(1) DEFAULT NULL,
-                                `var_type` tinyint(1) DEFAULT NULL,
-                                `for_ff` tinyint(1) DEFAULT NULL)''')
-
-            self.con.execute('CREATE INDEX idx_chrom_pos ON variants (chromosome, pos);')
->>>>>>> 9b2c6c108b08a44af3c61a01a42a49d26c498d7d
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):
@@ -68,19 +53,11 @@ class Variants(object):
                         position, line[0], line[1], line[2], line[3], line[4], line[5])
 
         query = query[:-1] + ';'
-<<<<<<< HEAD
-        self.con.execute(query) ### TODO: check if execute many is better
-        self.con.commit()
-
-    def fetalLengthDist(self):
-        return pd.read_sql_query("select * from fetal_lengths", self.con)
-=======
         self.con.execute(query)
         self.con.commit()
 
     def fetalLengthDist(self):
-        return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by len", self.con)
->>>>>>> 9b2c6c108b08a44af3c61a01a42a49d26c498d7d
+        return pd.read_sql_query("select * from fetal_lengths", self.con)
 
     def sharedLengthDist(self):
         return pd.read_sql_query("select * from shared_lengths", self.con)
@@ -103,11 +80,10 @@ class Variants(object):
         )
         ''')
 
-<<<<<<< HEAD
         self.con.execute("insert into fetal_lengths select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`")
         self.con.execute("insert into shared_lengths select `length`, count(*) as `count` from (select min(`length`) as `length` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by `qname`) as qunique group by `length`")
-=======
+
+        self.con.commit()
     def update_is_fetal(self):
         self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname=(SELECT qname FROM variants WHERE is_fetal=1)')
->>>>>>> 9b2c6c108b08a44af3c61a01a42a49d26c498d7d
         self.con.commit()

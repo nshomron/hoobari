@@ -59,7 +59,6 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 	pool.close()
 	pool.join()
 
-<<<<<<< HEAD
 	shared_lengths = pooled_results[0][0]
 	fetal_lengths = pooled_results[0][1]
 	for tup in pooled_results[1:]:
@@ -69,17 +68,6 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 	#TODO: Can I disable sorting?
 	shared_lengths = shared_lengths.groupby(by='length').sum()
 	fetal_lengths = fetal_lengths.groupby(by='length').sum()
-=======
-	shared_lengths = pd.DataFrame.from_dict({'len':[1], 'count':[0]})
-	fetal_lengths = pd.DataFrame.from_dict({'len':[1], 'count':[0]})
-	for tup in pooled_results:
-		shared_lengths = shared_lengths.merge(tup[0], how='outer')
-		fetal_lengths = fetal_lengths.merge(tupp[1], how='outer')
-
-	#TODO: When do I sort, in query or after summing
-	shared_lengths = shared_lengths.groupby(['len']).sum()
-	fetal_lengths = fetal_lengths.groupby(['len']).sum()
->>>>>>> 9b2c6c108b08a44af3c61a01a42a49d26c498d7d
 
 	return (shared_lengths, fetal_lengths)
 
