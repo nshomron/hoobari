@@ -29,7 +29,7 @@ class Variants(object):
                                 `is_fetal` tinyint(1) DEFAULT NULL,
                                 `var_type` tinyint(1) DEFAULT NULL,
                                 `for_ff` tinyint(1) DEFAULT NULL)''')
-            
+
             self.con.execute('CREATE INDEX idx_chrom_pos ON variants (chromosome, pos);')
 
     # Insert variants to table
@@ -53,16 +53,13 @@ class Variants(object):
                         position, line[0], line[1], line[2], line[3], line[4], line[5])
 
         query = query[:-1] + ';'
-        self.con.execute(query) ### TODO: check if execute many is better
-        #self.con.commit()
+        self.con.execute(query)
+        self.con.commit()
 
     def fetalLengthDist(self):
         return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=1 and chromosome not in ('X', 'Y') group by len", self.con)
 
     def sharedLengthDist(self):
-<<<<<<< 9fb2af6a7dd3367ee9066cb663ffac6ed6e9267e
-        return pd.read_sql_query("select distinct(`length`) as len, count(*) as `count` from variants where for_ff=2 and chromosome not in ('X', 'Y') group by len", self.con)
-=======
         return pd.read_sql_query("select * from shared_lengths", self.con)
 
     # Create length distribution table
@@ -82,7 +79,7 @@ class Variants(object):
             PRIMARY KEY (`length`)
         )
         ''')
->>>>>>> Removed unsupported unsigned type
 
     def update_is_fetal(self):
         self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname=(SELECT qname FROM variants WHERE is_fetal=1)')
+        self.con.commit()
