@@ -66,8 +66,8 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 		fetal_lengths = fetal_lengths.merge(tup[1], how='outer')
 
 	#TODO: Can I disable sorting?
-	shared_lengths = shared_lengths.groupby(by='length').sum().set_index('length')
-	fetal_lengths = fetal_lengths.groupby(by='length').sum().set_index('length')
+	shared_lengths = shared_lengths.groupby(by='length').sum()
+	fetal_lengths = fetal_lengths.groupby(by='length').sum()
 
 	return (shared_lengths, fetal_lengths)
 
