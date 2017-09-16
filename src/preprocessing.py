@@ -27,8 +27,8 @@ def get_fetal_and_shared_lengths(db_path):
 
     con = Variants(db_path, probe=False)
 
-    shared_df = con.fetalLengthDist()
-    fetal_df = con.sharedLengthDist()
+    shared_df = con.sharedLengthDist()
+    fetal_df = con.fetalLengthDist()
 
     return (shared_df, fetal_df)
 
