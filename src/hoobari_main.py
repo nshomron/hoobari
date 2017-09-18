@@ -123,10 +123,13 @@ for tup in co_reader:
 				
 				if parents_rec.genotype(mother_id).data.GT != '.':
 					matinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values()])
+				else:
+					matinfo = ':'.join(['.'] * (parents_rec.FORMAT.count(':') + 1))
+				
 				if parents_rec.genotype(father_id).data.GT != '.':
 					patinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values()])
 				else:
-					matinfo = patinfo = ':'.join(['.'] * (parents_rec.FORMAT.count(':') + 1))
+					patinfo = ':'.join(['.'] * (parents_rec.FORMAT.count(':') + 1))
 
 				# INFO field of output vcf
 				rec_info_list = []

@@ -14,13 +14,13 @@ import pandas as pd
 
 # --------- parse args ---------
 parser = argparse.ArgumentParser()
-parser.add_argument("-b", "--bam_file")
+parser.add_argument("-b", "--bam_file", help = 'The maternal cfDNA bam file\'s path')
 parser.add_argument("-t", "--tmp_dir", default = 'tmp_hb')
 parser.add_argument("-r", "--region", default = 'region')
 parser.add_argument("-parents_vcf", "--parents_vcf", help = 'bgzipped vcf of parents, indexed by tabix')
 parser.add_argument("-m", "--maternal_sample_name", help = 'maternal sample name as appears in parents vcf')
 parser.add_argument("-p", "--paternal_sample_name", help = 'paternal sample name as appears in parents vcf')
-parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name, or prefix if hoobari is run split')
+parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name, or db prefix if hoobari is run per region')
 args = parser.parse_args()
 # ------------------------------
 
@@ -57,8 +57,10 @@ def is_fetal_fragment(genotype, ref, alt, fetal_allele = False):
 	
 	if ((genotype == ref) and fetal_allele == 'ref') or ((genotype == alt) and fetal_allele == 'alt'):
 		return 1
-	else:
+	elif ((genotype == alt) and fetal_allele == 'ref') or ((genotype == ref) and fetal_allele == 'alt'):
 		return 0
+	else:
+		return None
 
 
 def get_var_type(alleles_dic):
@@ -87,6 +89,8 @@ def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fe
 			return 1
 		elif is_fetal == 0:
 			return 2 
+		else:
+			return 0
 	else:
 		return 0 # not for ff
 
@@ -162,7 +166,7 @@ for line in sys.stdin:
 				genotype = l[0]
 				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
 				for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
-				l += [is_fetal, var_type, for_ff]
+				l += [is_fetal if is_fetal is not None else 0, var_type, for_ff]
 
 			# print(position_list)
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
