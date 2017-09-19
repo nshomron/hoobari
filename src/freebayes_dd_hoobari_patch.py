@@ -17,6 +17,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--bam_file", help = 'The maternal cfDNA bam file\'s path')
 parser.add_argument("-t", "--tmp_dir", default = 'tmp_hb')
 parser.add_argument("-r", "--region", default = 'region')
+parser.add_argument("-d", "--debug", default = """By default, Freebayes' stderr is used by this patch,
+						which can cause a problem when actually trying to debug.
+						This flag causes this information to be printed. Please
+						note that the data, if saved, ends up in a very large file.""")
 parser.add_argument("-parents_vcf", "--parents_vcf", help = 'bgzipped vcf of parents, indexed by tabix')
 parser.add_argument("-m", "--maternal_sample_name", help = 'maternal sample name as appears in parents vcf')
 parser.add_argument("-p", "--paternal_sample_name", help = 'paternal sample name as appears in parents vcf')
@@ -122,7 +126,8 @@ else:
 vardb = db.Variants(dbpath = dbpath)
 
 for line in sys.stdin:
-	print(line, file = sys.stderr)
+	if args.debug:
+		print(line, file = sys.stderr, end = '')
 	if line.startswith('position: '):
 		initiate_var = True
 		line = line.split()
