@@ -8,7 +8,7 @@
 
 *Hoobari* is a [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) fetal variant caller designed to find SNPs (single-nucleotide polymorphisms) and indels (insertions and deletions) in a noninvasive manner.
 
-*Hoobari* uses sequencing data from the mother, the father and most importantly from [*cell-free DNA (cfDNA)*](https://en.wikipedia.org/wiki/Cell-free_fetal_DNA) in the maternal plasma, which contains both fetal and maternal DNA fragments. Parental variant calling and pre-processing of the cfDNA are performed using [*FreeBayes*](https://github.com/ekg/freebayes).
+*Hoobari* uses sequencing data from the mother, the father and most importantly from [cell-free DNA (cfDNA)](https://en.wikipedia.org/wiki/Cell-free_fetal_DNA) in the maternal plasma, which contains both fetal and maternal DNA fragments. Parental variant calling and pre-processing of the cfDNA are performed using [*FreeBayes*](https://github.com/ekg/freebayes).
 
 ## Obtaining
 
