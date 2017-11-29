@@ -32,6 +32,7 @@ To run Hoobari in the simplest way:
     tabix -f -p vcf parents.vcf.gz
 
 **Pre-processing of cfDNA:**
+    
     #!/bin/bash
 
     freebayes \
@@ -53,5 +54,6 @@ To run Hoobari in the simplest way:
     tabix -f -p vcf cfdna.vcf.gz
 
 **Fetal variant calling:**
+    
     hoobari -m MATERNAL_SAMPLE_NAME -p PATERNAL_SAMPLE_NAME -f CFDNA_SAMPLE_NAME -parents_vcf parents.vcf.gz -cfdna_vcf cfdna.vcf.gz | bgzip -c > $out_vcf
     tabix -f -p vcf $out_vcf
