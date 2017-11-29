@@ -64,6 +64,4 @@ Hoobari's pipeline consists of 3 steps:
     -f CFDNA_SAMPLE_NAME \
     -parents_vcf parents.vcf.gz \
     -cfdna_vcf cfdna.vcf.gz \
-    | bgzip -c > $out_vcf
-    
-    tabix -f -p vcf $out_vcf
+    > fetus.vcf
