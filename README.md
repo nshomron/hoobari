@@ -28,7 +28,13 @@ Hoobari's pipeline consists of 3 steps:
 To run Hoobari in the simplest way:
 
 **Parental variant detection:**
-    freebayes --fasta-reference h.sapiens.fasta mother.sorted.mdup.bam father.sorted.mdup.bam | bgzip -c > parents.vcf.gz
+    
+    freebayes \
+    --fasta-reference h.sapiens.fasta \
+    mother.sorted.mdup.bam \
+    father.sorted.mdup.bam \
+    | bgzip -c > parents.vcf.gz
+    
     tabix -f -p vcf parents.vcf.gz
 
 **Pre-processing of cfDNA:**
@@ -55,5 +61,12 @@ To run Hoobari in the simplest way:
 
 **Fetal variant calling:**
     
-    hoobari -m MATERNAL_SAMPLE_NAME -p PATERNAL_SAMPLE_NAME -f CFDNA_SAMPLE_NAME -parents_vcf parents.vcf.gz -cfdna_vcf cfdna.vcf.gz | bgzip -c > $out_vcf
+    hoobari \
+    -m MATERNAL_SAMPLE_NAME \
+    -p PATERNAL_SAMPLE_NAME \
+    -f CFDNA_SAMPLE_NAME \
+    -parents_vcf parents.vcf.gz \
+    -cfdna_vcf cfdna.vcf.gz \
+    | bgzip -c > $out_vcf
+    
     tabix -f -p vcf $out_vcf
