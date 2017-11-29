@@ -25,7 +25,7 @@ Hoobari's pipeline consists of 3 steps:
 2. Pre-processing of cfDNA (Freebayes + patch)
 3. Fetal variant calling (Hoobari)
 
-### To run Hoobari in the simplest way:
+To run Hoobari in the simplest way:
 
 **Parental variant detection:**
     freebayes --fasta-reference h.sapiens.fasta mother.sorted.mdup.bam father.sorted.mdup.bam | bgzip -c > parents.vcf.gz
