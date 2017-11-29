@@ -16,8 +16,8 @@ import pandas as pd
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--bam_file", help = 'The maternal cfDNA bam file\'s path')
 parser.add_argument("-t", "--tmp_dir", default = 'tmp_hb')
-parser.add_argument("-r", "--region", default = 'region')
-parser.add_argument("-d", "--debug", default = """By default, Freebayes' stderr is used by this patch,
+parser.add_argument("-r", "--region", default = False)
+parser.add_argument("-d", "--debug", action = 'store_true', default = False, help = """By default, Freebayes' stderr is used by this patch,
 						which can cause a problem when actually trying to debug.
 						This flag causes this information to be printed. Please
 						note that the data, if saved, ends up in a very large file.""")
@@ -128,6 +128,7 @@ vardb = db.Variants(dbpath = dbpath)
 for line in sys.stdin:
 	if args.debug:
 		print(line, file = sys.stderr, end = '')
+
 	if line.startswith('position: '):
 		initiate_var = True
 		line = line.split()
@@ -156,7 +157,7 @@ for line in sys.stdin:
 	elif line.startswith('genotype alleles:') and not initiate_var:
 		
 		alleles = line.rstrip().split('|')
-		print(var,alleles, file = sys.stderr)
+		#print(var,alleles, file = sys.stderr)
 		# print(position_list)
 		if len(alleles) <= 2: #TODO: more than bi-allelic
 			allele_dic = {}
