@@ -20,8 +20,37 @@ Note the use of --recursive. This is required in order to download all nested gi
 
 ## Usage
 
-Hoobari's pipeline consists of 3 simple steps:
+Hoobari's pipeline consists of 3 steps:
 1. Parental variant detection (Freebayes)
 2. Pre-processing of cfDNA (Freebayes + patch)
 3. Fetal variant calling (Hoobari)
 
+***To run Hoobari in the simplest way:
+**Parental variant detection:**
+    freebayes --fasta-reference h.sapiens.fasta mother.sorted.mdup.bam father.sorted.mdup.bam | bgzip -c > parents.vcf.gz
+    tabix -f -p vcf parents.vcf.gz
+
+**Pre-processing of cfDNA:**
+    #!/bin/bash
+
+    freebayes \
+    -d \
+    --fasta-reference h.sapiens.fasta \
+    --bam cfdna.sorted.mdup.bam \
+    --variant-input parents.vcf.gz \
+    --only-use-input-alleles \
+    2>&1 \
+    >cfdna.vcf \
+    | python /path/to/hoobari/src/freebayes_patch.py \
+    -b cfdna.sorted.mdup.bam \
+    -parents_vcf 02_parents.vcf.gz \
+    -m M02 \
+    -p F02 \
+    -d
+
+    bgzip -f cfdna.vcf
+    tabix -f -p vcf cfdna.vcf.gz
+
+**Fetal variant calling:**
+    hoobari -m MATERNAL_SAMPLE_NAME -p PATERNAL_SAMPLE_NAME -f CFDNA_SAMPLE_NAME -parents_vcf parents.vcf.gz -cfdna_vcf cfdna.vcf.gz | bgzip -c > $out_vcf
+    tabix -f -p vcf $out_vcf
