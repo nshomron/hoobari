@@ -51,10 +51,9 @@ To run Hoobari in the simplest way:
     >cfdna.vcf \
     | python /path/to/hoobari/src/freebayes_patch.py \
     -b cfdna.sorted.mdup.bam \
-    -parents_vcf 02_parents.vcf.gz \
-    -m M02 \
-    -p F02 \
-    -d
+    -parents_vcf parents.vcf.gz \
+    -m MATERNAL_SAMPLE_NAME \
+    -p PATERNAL_SAMPLE_NAME
 
     bgzip -f cfdna.vcf
     tabix -f -p vcf cfdna.vcf.gz
