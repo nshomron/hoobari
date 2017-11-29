@@ -1,4 +1,4 @@
-<img src="https://github.com/nshomron/hoobari/raw/master/misc/hoobari_logo.png" width=100/> <h1> a cell-free DNA based fetal variant detector </h1>
+<h1> <img src="https://github.com/nshomron/hoobari/raw/master/misc/hoobari_logo.png" width=110/> - a cell-free DNA based fetal variant detector </h1>
 
 ## user manual and guide
 
