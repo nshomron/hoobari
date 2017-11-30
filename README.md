@@ -33,9 +33,7 @@ Hoobari's pipeline consists of 3 steps:
     --fasta-reference h.sapiens.fasta \
     mother.sorted.mdup.bam \
     father.sorted.mdup.bam \
-    | bgzip -c > parents.vcf.gz
-    
-    tabix -f -p vcf parents.vcf.gz
+    > parents.vcf
 
 **Pre-processing of cfDNA:**
     
@@ -45,25 +43,20 @@ Hoobari's pipeline consists of 3 steps:
     -d \
     --fasta-reference h.sapiens.fasta \
     --bam cfdna.sorted.mdup.bam \
-    --variant-input parents.vcf.gz \
+    --variant-input parents.vcf \
     --only-use-input-alleles \
     2>&1 \
     >cfdna.vcf \
     | python /path/to/hoobari/src/freebayes_patch.py \
     -b cfdna.sorted.mdup.bam \
-    -parents_vcf parents.vcf.gz \
+    -parents_vcf parents.vcf \
     -m MATERNAL_SAMPLE_NAME \
     -p PATERNAL_SAMPLE_NAME
-
-    bgzip -f cfdna.vcf
-    tabix -f -p vcf cfdna.vcf.gz
 
 **Fetal variant calling:**
     
     hoobari \
     -m MATERNAL_SAMPLE_NAME \
     -p PATERNAL_SAMPLE_NAME \
-    -f CFDNA_SAMPLE_NAME \
-    -parents_vcf parents.vcf.gz \
-    -cfdna_vcf cfdna.vcf.gz \
-    > fetus.vcf
+    -parents_vcf parents.vcf \
+    -cfdna_vcf cfdna.vcf
