@@ -6,9 +6,9 @@
 
 ## Overview
 
-*Hoobari* is a [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) genetic fetal variant detector designed to find small polymorphisms, specifically SNPs (single-nucleotide polymorphisms) and indels (insertions and deletions) smaller than the length of a short-read sequencing alignment.
+*Hoobari* is a [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) fetal variant caller designed to find SNPs (single-nucleotide polymorphisms) and indels (insertions and deletions) in a noninvasive manner.
 
-*Hoobari* uses sequencing data from the mother, the father and most importantly from cell-free DNA (cfDNA) in the maternal plasma, which contains both fetal and maternal DNA fragments. Parental variant calling and pre-processing of the cfDNA are performed using [*FreeBayes*](https://github.com/ekg/freebayes).
+*Hoobari* uses sequencing data from the mother, the father and most importantly from [cell-free DNA (cfDNA)](https://en.wikipedia.org/wiki/Cell-free_fetal_DNA) in the maternal plasma, which contains both fetal and maternal DNA fragments. Parental variant calling and pre-processing of the cfDNA are performed using [*FreeBayes*](https://github.com/ekg/freebayes).
 
 ## Obtaining
 
@@ -25,10 +25,14 @@ Hoobari's pipeline consists of 3 steps:
 2. Pre-processing of cfDNA (Freebayes + patch)
 3. Fetal variant calling (Hoobari)
 
-To run Hoobari in the simplest way:
-
 **Parental variant detection:**
-    freebayes --fasta-reference h.sapiens.fasta mother.sorted.mdup.bam father.sorted.mdup.bam | bgzip -c > parents.vcf.gz
+    
+    freebayes \
+    --fasta-reference h.sapiens.fasta \
+    mother.sorted.mdup.bam \
+    father.sorted.mdup.bam \
+    | bgzip -c > parents.vcf.gz
+    
     tabix -f -p vcf parents.vcf.gz
 
 **Pre-processing of cfDNA:**
@@ -45,15 +49,19 @@ To run Hoobari in the simplest way:
     >cfdna.vcf \
     | python /path/to/hoobari/src/freebayes_patch.py \
     -b cfdna.sorted.mdup.bam \
-    -parents_vcf 02_parents.vcf.gz \
-    -m M02 \
-    -p F02 \
-    -d
+    -parents_vcf parents.vcf.gz \
+    -m MATERNAL_SAMPLE_NAME \
+    -p PATERNAL_SAMPLE_NAME
 
     bgzip -f cfdna.vcf
     tabix -f -p vcf cfdna.vcf.gz
 
 **Fetal variant calling:**
     
-    hoobari -m MATERNAL_SAMPLE_NAME -p PATERNAL_SAMPLE_NAME -f CFDNA_SAMPLE_NAME -parents_vcf parents.vcf.gz -cfdna_vcf cfdna.vcf.gz | bgzip -c > $out_vcf
-    tabix -f -p vcf $out_vcf
+    hoobari \
+    -m MATERNAL_SAMPLE_NAME \
+    -p PATERNAL_SAMPLE_NAME \
+    -f CFDNA_SAMPLE_NAME \
+    -parents_vcf parents.vcf.gz \
+    -cfdna_vcf cfdna.vcf.gz \
+    > fetus.vcf
