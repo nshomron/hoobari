@@ -1,4 +1,4 @@
-<h1> <img src="https://github.com/nshomron/hoobari/raw/master/misc/hoobari_logo_2.png" width=100/>, a cell-free DNA based fetal variant detector </h1>
+<h1> h◎bari, a cell-free DNA based fetal variant detector </h1>
 
 ## user manual and guide
 
