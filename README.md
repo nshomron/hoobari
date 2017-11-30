@@ -8,7 +8,7 @@
 
 [*Hoobari*](https://github.com/nshomron/hoobari) *(Hebrew: hoo - him, bari - healthy, oobari - fetal)* is the first fetal variant calling program, designed to prenataly find SNPs (single-nucleotide polymorphisms) and indels (insertions and deletions) in a noninvasive manner. It requires sequencing data of the mother, the father and the [cell-free DNA (cfDNA)](https://en.wikipedia.org/wiki/Cell-free_fetal_DNA), that is found in the maternal plasma and contains both fetal and maternal DNA fragments.
 
-*Hoobari* is based on a [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) algorithm in which each cfDNA fragment has its own probability of being fetal. Its output is a standard Variant Calling Format ([VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf)) file, that can be further assessed by many bioinformatical tools.
+*Hoobari* is based on a [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) algorithm in which each cfDNA fragment has its own probability of being fetal. Its output is a standard Variant Calling Format ([VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf)) file, that can be further analyzed and annonated by different tools.
 
 One of *Hoobari*'s main goals is to create a general framework for the process of noninvasive fetal genotyping, that follows existing standards and is compatible with other bioinformatical tools. *Hoobari*'s workflow is therefore similar to that of other variant callers, and conveniently allows the introduction of future improvements. Hopefully, *Hoobari* will help make this field, which is still in its infancy, somewhat more accessible for other researchers.
 
