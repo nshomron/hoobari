@@ -1,4 +1,5 @@
-<h1> h◎bari, a Bayesian-based noninvasive fetal variant detector </h1>
+<h1> h◎bari </h1>
+<h2> a Bayesian-based noninvasive fetal variant detector </h2>
 
 ## user manual and guide
 
