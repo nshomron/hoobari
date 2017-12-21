@@ -1,4 +1,4 @@
-<h1> h◎bari, a cell-free DNA-based fetal variant detector </h1>
+<h1> h◎bari, Bayesian-based noninvasive fetal variant detector </h1>
 
 ## user manual and guide
 
