@@ -42,7 +42,8 @@ def get_fetal_and_shared_lengths(db_path):
 
 	return (shared_lengths, fetal_lengths)
 
-def create_length_distributions(db_path, cores = False, db_prefix = False):
+
+def create_length_distributions(db_path, cores = False, db_prefix = False, qnames = False):
 	'''
 	input: db_path - path to the database from hoobari's patch; cores - number of cores to use for
 	multiprocessing; db_prefix - if hoobari's patch was ran for many different regions, it creates
@@ -79,9 +80,17 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 	# create two lists, one with all the shared fragments results, and one for the fetal fragments results
 	shared_dic_list = []
 	fetal_dic_list = []
+	# if qnames:
+	# 	shared_qnames_dic_list = []
+	# 	fetal_qnames_dic_list = []
+	
 	for tup in pooled_results:
 		shared_dic_list.append(tup[0])
 		fetal_dic_list.append(tup[1])
+		# if qnames:
+		# 	shared_qnames_dic_list.append(tup[2])
+		# 	fetal_qnames_dic_list.append(tup[3])
+
 
 	# sum each list of dictionaries to create the two distributions
 	shared_lengths_counter = sum(map(Counter, shared_dic_list), Counter())
@@ -93,14 +102,18 @@ def create_length_distributions(db_path, cores = False, db_prefix = False):
 
 	return (shared_lengths, fetal_lengths)
 
-def generate_length_distributions_plot(shared_lengths, fetal_lengths, file_name):
+def generate_length_distributions_plot(shared_lengths, fetal_lengths, fetal_sample):
 	'''
 	save the length distributions plot
 	'''
-	#TODO: create density plots instead
-	shared_plot = shared_lengths[shared_lengths.index < 501].plot()
-	fetal_lengths[fetal_lengths.index < 501].plot(ax = shared_plot)
-	plt.savefig(file_name)	
+	fetal_lengths_500 = fetal_lengths[fetal_lengths.index < 501]
+	shared_lengths_500 = shared_lengths[shared_lengths.index < 501]
+	shared_density = shared_lengths_500 / shared_lengths_500.sum()
+	fetal_density = fetal_lengths_500 / fetal_lengths_500.sum()
+	length_distributions_df = pd.concat([fetal_density.iloc[1:500], shared_density.iloc[1:500]], axis = 1)
+	length_distributions_df.columns = ['fetal fragments', 'shared fragments']
+	length_distributions_df.plot()
+	plt.savefig(fetal_sample + '.length_distributions.png')
 
 def calculate_total_fetal_fraction(shared_lengths, fetal_lengths):
 	
@@ -199,10 +212,17 @@ def calculate_err_rate():
 	err = 0.003
 	return err
 
-def run_full_preprocessing(db_path, cores = False, db_prefix = False, window = False, max_len = 500, plot = False):
+def run_full_preprocessing(	db_path,
+							fetal_sample,
+							cores = False,
+							db_prefix = False,
+							window = False,
+							max_len = 500,
+							plot = False,
+							qnames = False):
 	
 	printerr('pre-processing', 'creating length distributions')
-	shared_lengths, fetal_lengths = create_length_distributions(db_path, cores = cores, db_prefix = db_prefix)
+	shared_lengths, fetal_lengths = create_length_distributions(db_path, cores = cores, db_prefix = db_prefix, qnames = qnames)
 	printerr('pre-processing', 'calculating error rate')
 	err_rate = calculate_err_rate()
 	printerr('pre-processing', 'calculating total fetal fraction')
@@ -210,8 +230,7 @@ def run_full_preprocessing(db_path, cores = False, db_prefix = False, window = F
 	printerr('pre-processing', 'calculating fetal fraction per read template length')
 	fetal_fractions_df = create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, total_fetal_fraction, err_rate, window, max_len = max_len)
 	if plot:
-		plot_file_name = 'length_distributions.png'
-		printerr('pre-processing', 'saving length distributions plot as ')
-		generate_length_distributions_plot(shared_lengths, fetal_lengths, plot_file_name)
+		printerr('pre-processing', 'saving length distributions plot as', fetal_sample + '.length_distributions.csv')
+		generate_length_distributions_plot(shared_lengths, fetal_lengths, fetal_sample)
 
 	return (err_rate, total_fetal_fraction, fetal_fractions_df)

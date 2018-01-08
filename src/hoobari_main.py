@@ -34,6 +34,7 @@ if os.path.isfile(args.preprocessing_pkl):
 		err_rate, total_fetal_fraction, fetal_fractions_df = pickle.load(f)
 else:
 	err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_preprocessing(	args.db,
+													args.fetal_sample_name,
 													cores = args.cores,
 													db_prefix = args.db_prefix,
 													window = args.window,
