@@ -1,4 +1,5 @@
-<h1> h◎bari, a cell-free DNA-based fetal variant detector </h1>
+<h1> h◎bari </h1>
+<h2> a Bayesian-based noninvasive fetal variant detector </h2>
 
 ## user manual and guide
 
@@ -6,11 +7,11 @@
 
 ## Overview
 
-[*Hoobari*](https://github.com/nshomron/hoobari) *(Hebrew: Hoo - him, bari - healthy, oobari - fetal)* is the first fetal variant calling program, designed to prenataly find SNPs (single-nucleotide polymorphisms) and indels (insertions and deletions) in a noninvasive manner. It requires sequencing data of the mother, the father and the [cell-free DNA (cfDNA)](https://en.wikipedia.org/wiki/Cell-free_fetal_DNA), that is found in the maternal plasma and contains both fetal and maternal DNA fragments.
+[*Hoobari*](https://github.com/nshomron/hoobari) *(Hebrew: hoo - him, bari - healthy, oobari - fetal)* is the first fetal variant calling program, designed to prenataly find SNPs (single-nucleotide polymorphisms) and indels (insertions and deletions) in a noninvasive manner. It requires sequencing data of the mother, the father and the [cell-free DNA (cfDNA)](https://en.wikipedia.org/wiki/Cell-free_fetal_DNA), that is found in the maternal plasma and contains both fetal and maternal DNA fragments.
 
-*Hoobari* is based on a [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) algorithm in which each cfDNA fragment has its own probability of being fetal. Its output is a standard Variant Calling Format ([VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf)) file, that can be further assessed by many bioinformatical tools.
+*Hoobari* is based on a [Bayesian](http://en.wikipedia.org/wiki/Bayesian_inference) algorithm in which each cfDNA fragment has its own probability of being fetal. Its output is a standard Variant Calling Format ([VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf)) file, that can be further analyzed and annonated by different tools.
 
-One of *Hoobari*'s main goals is to create a general framework for the process of noninvasive fetal genotyping, that follows existing standards and is compatible with other bioinformatical tools. *Hoobari*'s workflow is therefore similar to that of other variant callers, and conveniently allows the introduction of future improvements. Hopefully, *Hoobari* will help make this field more accessible for other researchers.
+One of *Hoobari*'s main goals is to create a general framework for the process of noninvasive fetal genotyping, that follows existing standards and is compatible with other bioinformatical tools. *Hoobari*'s workflow is therefore similar to that of other variant callers, and conveniently allows the introduction of future improvements. Hopefully, *Hoobari* will help make this field, which is still in its infancy, somewhat more accessible for other researchers.
 
 ## Obtaining
 
@@ -33,9 +34,7 @@ Hoobari's pipeline consists of 3 steps:
     --fasta-reference h.sapiens.fasta \
     mother.sorted.mdup.bam \
     father.sorted.mdup.bam \
-    | bgzip -c > parents.vcf.gz
-    
-    tabix -f -p vcf parents.vcf.gz
+    > parents.vcf
 
 **Pre-processing of cfDNA:**
     
@@ -45,25 +44,20 @@ Hoobari's pipeline consists of 3 steps:
     -d \
     --fasta-reference h.sapiens.fasta \
     --bam cfdna.sorted.mdup.bam \
-    --variant-input parents.vcf.gz \
+    --variant-input parents.vcf \
     --only-use-input-alleles \
     2>&1 \
     >cfdna.vcf \
     | python /path/to/hoobari/src/freebayes_patch.py \
     -b cfdna.sorted.mdup.bam \
-    -parents_vcf parents.vcf.gz \
+    -parents_vcf parents.vcf \
     -m MATERNAL_SAMPLE_NAME \
     -p PATERNAL_SAMPLE_NAME
-
-    bgzip -f cfdna.vcf
-    tabix -f -p vcf cfdna.vcf.gz
 
 **Fetal variant calling:**
     
     hoobari \
     -m MATERNAL_SAMPLE_NAME \
     -p PATERNAL_SAMPLE_NAME \
-    -f CFDNA_SAMPLE_NAME \
-    -parents_vcf parents.vcf.gz \
-    -cfdna_vcf cfdna.vcf.gz \
-    > fetus.vcf
+    -parents_vcf parents.vcf \
+    -cfdna_vcf cfdna.vcf
