@@ -39,7 +39,8 @@ else:
 													db_prefix = args.db_prefix,
 													window = args.window,
 													max_len = 500,
-													plot = args.plot_lengths)
+													plot = args.plot_lengths,
+													qnames = args.qnames)
 	if args.preprocessing_pkl:
 		with open(args.preprocessing_pkl, 'wb') as f:
 			pickle.dump((err_rate, total_fetal_fraction, fetal_fractions_df), f)

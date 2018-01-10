@@ -23,7 +23,7 @@ import vcfuid
 
 # --------- functions ----------
 
-def get_fetal_and_shared_lengths(db_path):
+def get_fetal_and_shared_lengths(db_path, qnames = False):
 	'''
 	input - path to the database from hoobari's patch
 	output - a tuple with two dictionaries, one contains the counts of fetal fragments at different lengths,
@@ -39,8 +39,12 @@ def get_fetal_and_shared_lengths(db_path):
 
 	shared_lengths = shared_df['length'].value_counts().to_dict()
 	fetal_lengths = fetal_df['length'].value_counts().to_dict()
-
-	return (shared_lengths, fetal_lengths)
+	if qnames:
+		shared_qnames = set(shared_df['qname'])
+		fetal_qnames = set(fetal_df['qname'])
+		return (shared_lengths, fetal_lengths, shared_qnames, fetal_qnames)
+	else:
+		return (shared_lengths, fetal_lengths)
 
 
 def create_length_distributions(db_path, cores = False, db_prefix = False, qnames = False):
@@ -73,24 +77,25 @@ def create_length_distributions(db_path, cores = False, db_prefix = False, qname
 		db_files = [db_path]
 
 	# run the function get_fetal_and_shared_lengths for each path in db_files
-	pooled_results = pool.map(get_fetal_and_shared_lengths, db_files)
+	# pooled_results = pool.map(get_fetal_and_shared_lengths, db_files)
+	get_qnames_and_alleles_with_args = partial(get_fetal_and_shared_lengths, qnames = qnames)
+	pooled_results = pool.map(get_qnames_and_alleles_with_args, db_files)
 	pool.close()
 	pool.join()
 
 	# create two lists, one with all the shared fragments results, and one for the fetal fragments results
 	shared_dic_list = []
 	fetal_dic_list = []
-	# if qnames:
-	# 	shared_qnames_dic_list = []
-	# 	fetal_qnames_dic_list = []
+	if qnames:
+		shared_qnames_set = set()
+		fetal_qnames_set = set()
 	
 	for tup in pooled_results:
 		shared_dic_list.append(tup[0])
 		fetal_dic_list.append(tup[1])
-		# if qnames:
-		# 	shared_qnames_dic_list.append(tup[2])
-		# 	fetal_qnames_dic_list.append(tup[3])
-
+		if qnames:
+			shared_qnames_set.update(tup[2])
+			fetal_qnames_set.update(tup[3])
 
 	# sum each list of dictionaries to create the two distributions
 	shared_lengths_counter = sum(map(Counter, shared_dic_list), Counter())
@@ -100,7 +105,15 @@ def create_length_distributions(db_path, cores = False, db_prefix = False, qname
 	shared_lengths = pd.DataFrame.from_dict(shared_lengths_counter, orient = 'index').sort_index()
 	fetal_lengths = pd.DataFrame.from_dict(fetal_lengths_counter, orient = 'index').sort_index()
 
-	return (shared_lengths, fetal_lengths)
+	if qnames:
+		with open('shared_qnames_list.txt', 'w') as f:
+			for q in shared_qnames_set:
+				print(q, file = f)
+		with open('fetal_qnames_list.txt', 'w') as f:
+			for q in fetal_qnames_set:
+				print(q, file = f)
+
+	return(shared_lengths, fetal_lengths)
 
 def generate_length_distributions_plot(shared_lengths, fetal_lengths, fetal_sample):
 	'''

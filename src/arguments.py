@@ -16,6 +16,7 @@ parser.add_argument("-r", "--region", default = False, help = "run on a specific
 parser.add_argument("-v", "--verbosity", action = 'store_true', help = "Prints more detailed debugging information")
 parser.add_argument("-w", "--window", default = 3, help = "Window size for lengths")
 parser.add_argument("-l", "--plot_lengths", default = False, action = 'store_true', help = "Creates a plot of the length distributions")
+parser.add_argument("-q", "--qnames", default = False, action = 'store_true', help = "Creates lists of fetal and shared qnames")
 parser.add_argument("-d", "--db", default = os.path.join(tmp_dir, 'hoobari.db'), help = 'db path')
 parser.add_argument("-D", "--db_prefix", default = False, help = '''If hoobari is run split, all sqlite databases are expected to be in the
 									same location as the processed database, sharing some unique prefix''')
