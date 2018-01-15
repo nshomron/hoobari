@@ -17,7 +17,10 @@ class Variants(object):
 
             # Drop existing database if needed
             if res.fetchone():
-                self.con.execute('DROP TABLE `variants`;')
+                self.con.execute('DROP TABLE `variants`')
+                self.con.execute('DROP TABLE `qnames`')
+                self.con.execute('DROP VIEW `shared`')
+                self.con.execute('DROP VIEW `fetal`')
 
             if not res.fetchone():
                 self.con.execute(   '''CREATE TABLE IF NOT EXISTS `variants`(
@@ -29,8 +32,23 @@ class Variants(object):
                                     `is_fetal` tinyint(1) DEFAULT NULL,
                                     `var_type` tinyint(1) DEFAULT NULL,
                                     `for_ff` tinyint(1) DEFAULT NULL)''')
-
                 self.con.execute('CREATE INDEX idx_chrom_pos ON variants (chromosome, pos);')
+                #TODO: Are properties like chromosome constant for each qname
+                self.con.execute(   '''CREATE TABLE IF NOT EXISTS `qnames`(
+                                    `qname` varchar(50) PRIMARY KEY,
+                                    `length` int(10) DEFAULT NULL,
+                                    `is_fetal` tinyint(1) DEFAULT NULL,
+                                    )''')
+                self.con.execute(   '''CREATE TABLE IF NOT EXISTS `variants`(
+                                    `qname` varchar(50) NOT NULL,
+                                    `chromosome` char(2) DEFAULT NULL,
+                                    `pos` int(10) NOT NULL,
+                                    `genotype` varchar(50) DEFAULT NULL,
+                                    `var_type` tinyint(1) DEFAULT NULL,
+                                    `for_ff` tinyint(1) DEFAULT NULL,
+                                    FOREIGN KEY(`qname`) REFERENCES qnames(`qname`)
+                                    )''')
+                self.con.execute('CREATE INDEX idx_chrom_pos ON variants (chromosome, pos)')
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):
@@ -56,46 +74,6 @@ class Variants(object):
         self.con.execute(query)
         self.con.commit()
 
-    def fetalLengthDist(self):
-        return pd.read_sql_query("select * from fetal_lengths", self.con)
-
-    def sharedLengthDist(self):
-        return pd.read_sql_query("select * from shared_lengths", self.con)
-
-    # Create length distribution table
-    def createDistTable(self):
-        self.con.execute('''
-        create table if not exists fetal_lengths(
-            `length` int NOT NULL,
-            `count`  int NOT NULL DEFAULT '0',
-            PRIMARY KEY (`length`)
-        )
-        ''')
-
-        self.con.execute('''
-        create table if not exists shared_lengths(
-            `length` int NOT NULL,
-            `count`  int NOT NULL DEFAULT '0',
-            PRIMARY KEY (`length`)
-        )
-        ''')
-
-        self.con.execute("""
-            insert into fetal_lengths
-            select `length`, count(*) as `count`
-            from (select distinct(qname), `length`
-                from variants where for_ff=1 and chromosome not in ('X', 'Y'))
-            group by `length`
-        """)
-        self.con.execute("""
-            insert into shared_lengths
-            select `length`, count(*) as `count`
-            from (select distinct(qname), `length`
-                from variants where for_ff=2 and chromosome not in ('X', 'Y'))
-            group by `length`
-        """)
-        self.con.commit()
-
     def update_is_fetal(self):
-        self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname=(SELECT qname FROM variants WHERE is_fetal=1)')
+        self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname in (SELECT qname FROM variants WHERE is_fetal=1)')
         self.con.commit()
