@@ -82,23 +82,24 @@ class Variants(object):
         self.con.execute(query)
         self.con.commit()
 
-        # Create length distributions
-        lengthDists()
-
     # Create views for both shared and fetal lengths
     def lengthDists(self):
         self.execute('''
-        CREATE VIEW fetal_lengths AS SELECT length FROM qnames WHERE is_fetal=1
+        CREATE VIEW fetal_lengths AS SELECT length, qname FROM qnames WHERE is_fetal=1
         ''')
         self.execute('''
-        CREATE VIEW shared_lengths AS SELECT length FROM qnames WHERE is_fetal=0
+        CREATE VIEW shared_lengths AS SELECT length, qname FROM qnames WHERE is_fetal=0
         ''')
 
 
     # Get fetal lengths
     def getFetalLengths(self):
-        return pd.read_sql_query("SELECT * FROM fetal_lengths")
+        return pd.read_sql_query("SELECT length, COUNT(length) FROM fetal_lengths GROUP BY length")
 
     # Get shared lengths
     def getSharedLengths(self):
-        return pd.read_sql_query("SELECT * FROM shared_lengths")
+        return pd.read_sql_query("SELECT length, COUNT(length) FROM shared_lengths GROUP BY length")
+
+    # Gets fetal and shared qnames
+    def getFetalSharedQnames(self):
+        return pd.read_sql_query("SELECT DISTINCT(qname) FROM fetal_lengths"), pd.read_sql_query("SELECT DISTINCT(qname) FROM shared_lengths")
