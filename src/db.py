@@ -17,10 +17,10 @@ class Variants(object):
 
             # Drop existing database if needed
             if res.fetchone():
-                self.con.execute('DROP TABLE `variants`')
-                self.con.execute('DROP TABLE `qnames`')
-                self.con.execute('DROP VIEW `shared`')
-                self.con.execute('DROP VIEW `fetal`')
+                self.con.execute('DROP TABLE variants')
+                self.con.execute('DROP TABLE qnames')
+                self.con.execute('DROP VIEW shared_lengths')
+                self.con.execute('DROP VIEW fetal_lengths')
 
             if not res.fetchone():
 
@@ -81,6 +81,9 @@ class Variants(object):
         query = query[:-1]
         self.con.execute(query)
         self.con.commit()
+
+        # Create length distributions
+        lengthDists()
 
     # Create views for both shared and fetal lengths
     def lengthDists(self):
