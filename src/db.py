@@ -75,12 +75,30 @@ class Variants(object):
             '''
 
         for line in info_list:
-            query += '("{0}",{1},"{2}",{3},"{4}",{5},{6},{7}),'.format(chromosome,
+            query += '("{0}",{1},"{2}",{3},"{4}",{5}),'.format(chromosome,
                         position, line[0], line[2], line[4], line[5])
 
         query = query[:-1]
         self.con.execute(query)
         self.con.commit()
+
+    # Create views for both shared and fetal lengths
+    def lengthDists(self):
+        self.execute('''
+        CREATE VIEW fetal_lengths AS SELECT length FROM qnames WHERE is_fetal=1
+        ''')
+        self.execute('''
+        CREATE VIEW shared_lengths AS SELECT length FROM qnames WHERE is_fetal=0
+        ''')
+
+
+    # Get fetal lengths
+    def getFetalLengths(self):
+        return pd.read_sql_query("SELECT * FROM fetal_lengths")
+
+    # Get shared lengths
+    def getSharedLengths(self):
+        return pd.read_sql_query("SELECT * FROM shared_lengths")
 
     def update_is_fetal(self):
         self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname in (SELECT qname FROM variants WHERE is_fetal=1)')
