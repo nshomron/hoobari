@@ -99,7 +99,3 @@ class Variants(object):
     # Get shared lengths
     def getSharedLengths(self):
         return pd.read_sql_query("SELECT * FROM shared_lengths")
-
-    def update_is_fetal(self):
-        self.con.execute('UPDATE variants SET is_fetal=1 WHERE qname in (SELECT qname FROM variants WHERE is_fetal=1)')
-        self.con.commit()
