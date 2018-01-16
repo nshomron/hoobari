@@ -30,6 +30,7 @@ class Variants(object):
                                     length int(10) DEFAULT NULL,
                                     is_fetal tinyint(1) DEFAULT NULL
                                     )''')
+                self.con.execute('CREATE INDEX idx_length_fetal ON qnames (length, is_fetal)')
                 self.con.execute(   '''CREATE TABLE variants(
                                     qname varchar(50) NOT NULL,
                                     chromosome char(2) DEFAULT NULL,
