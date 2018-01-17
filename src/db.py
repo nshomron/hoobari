@@ -53,12 +53,12 @@ class Variants(object):
             if line[3] == 1:
                 self.con.execute('''
                 INSERT OR REPLACE INTO qnames (length, qname, is_fetal)
-                VALUES(:len, :qname, :fetal)
+                VALUES(:len, ":qname", :fetal)
                 ''',{"len":int(line[1]), "qname":line[2], "fetal":int(line[3])})
             else:
                 self.con.execute('''
                 INSERT OR IGNORE INTO qnames (length, qname, is_fetal)
-                VALUES(:len, :qname, :fetal)
+                VALUES(:len, ":qname", :fetal)
                 ''',{"len":int(line[1]), "qname":line[2], "fetal":int(line[3])})
 
 
@@ -94,15 +94,25 @@ class Variants(object):
 
     # Get fetal lengths
     def getFetalLengths(self):
-        return pd.read_sql_query("SELECT length, COUNT(length) FROM fetal_lengths GROUP BY length")
+        return pd.read_sql_query("""
+                                    SELECT length, COUNT(length)
+                                    FROM fetal_lengths
+                                    WHERE chromosome not in ('X','Y')
+                                    GROUP BY length
+                                """)
 
     # Get shared lengths
     def getSharedLengths(self):
-        return pd.read_sql_query("SELECT length, COUNT(length) FROM shared_lengths GROUP BY length")
+        return pd.read_sql_query("""
+                                    SELECT length, COUNT(length)
+                                    FROM shared_lengths
+                                    WHERE chromosome not in ('X','Y')
+                                    GROUP BY length
+                                """)
 
     # Gets fetal and shared qnames
     def getFetalSharedQnames(self):
-        return pd.read_sql_query("SELECT DISTINCT(qname) FROM fetal_lengths"), pd.read_sql_query("SELECT DISTINCT(qname) FROM shared_lengths")
+        return set(this.con.execute("SELECT DISTINCT(qname) FROM fetal_lengths")), set(this.con.execute("SELECT DISTINCT(qname) FROM shared_lengths"))
 
     # Gets all variants in specified chromosomal position
     def getPositionVariants(self, chromosome, position):
