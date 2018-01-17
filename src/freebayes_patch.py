@@ -14,19 +14,21 @@ import pandas as pd
 
 # --------- parse args ---------
 parser = argparse.ArgumentParser()
-parser.add_argument("-b", "--bam_file")
+parser.add_argument("-b", "--bam_file", help = 'The maternal cfDNA bam file\'s path')
 parser.add_argument("-t", "--tmp_dir", default = 'tmp_hb')
-parser.add_argument("-r", "--region", default = 'region')
+parser.add_argument("-r", "--region", default = False)
+parser.add_argument("-d", "--debug", action = 'store_true', default = False, help = """By default, Freebayes' stderr is used by this patch,
+						which can cause a problem when actually trying to debug.
+						This flag causes this information to be printed. Please
+						note that the data, if saved, ends up in a very large file.""")
 parser.add_argument("-parents_vcf", "--parents_vcf", help = 'bgzipped vcf of parents, indexed by tabix')
 parser.add_argument("-m", "--maternal_sample_name", help = 'maternal sample name as appears in parents vcf')
 parser.add_argument("-p", "--paternal_sample_name", help = 'paternal sample name as appears in parents vcf')
-parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name, or prefix if hoobari is run split')
+parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name, or db prefix if hoobari is run per region')
 args = parser.parse_args()
 # ------------------------------
 
 # --------- functions ---------
-
-
 def get_parental_genotypes(parents_reader, maternal_sample_name, paternal_sample_name, chrom, position):
 	n_rec = 0
 	for rec in parents_reader.fetch(chrom, int(position) - 1, int(position)):
@@ -35,7 +37,7 @@ def get_parental_genotypes(parents_reader, maternal_sample_name, paternal_sample
 		n_rec += 1
 		if n_rec > 1:
 			sys.exit('more than one parental variant in the same position')
-
+		
 	return maternal_gt, paternal_gt
 
 def get_reads_tlen(bam_reader, chrom, position):
@@ -56,20 +58,22 @@ def get_fetal_allele_type(maternal_gt, paternal_gt):
 		return False
 
 def is_fetal_fragment(genotype, ref, alt, fetal_allele = False):
-
+	
 	if ((genotype == ref) and fetal_allele == 'ref') or ((genotype == alt) and fetal_allele == 'alt'):
 		return 1
-	else:
+	elif ((genotype == alt) and fetal_allele == 'ref') or ((genotype == ref) and fetal_allele == 'alt'):
 		return 0
+	else:
+		return None
 
 
 def get_var_type(alleles_dic):
-
+	
 	'''
 	code	type
 	----	----
 	1	snp
-	2	mnp
+	2	mnp 
 	3	insertion
 	4	deletion
 	5	complex
@@ -83,12 +87,14 @@ def get_var_type(alleles_dic):
 def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal):
 	var_in_ff_positions = (maternal_gt == '0/0' and paternal_gt == '1/1') or (maternal_gt == '1/1' and paternal_gt == '0/0')
 	var_is_snp = var_type == 1
-
+	
 	if var_in_ff_positions and var_is_snp:
 		if is_fetal == 1:
 			return 1
 		elif is_fetal == 0:
-			return 2
+			return 2 
+		else:
+			return 0
 	else:
 		return 0 # not for ff
 
@@ -117,10 +123,11 @@ if args.region:
 	dbpath = os.path.join(args.tmp_dir, args.db + '.' + str(args.region) + '.db')
 else:
 	dbpath = os.path.join(args.tmp_dir, args.db + '.db')
-
 vardb = db.Variants(dbpath = dbpath)
 
 for line in sys.stdin:
+	if args.debug:
+		print(line, file = sys.stderr, end = '')
 
 	if line.startswith('position: '):
 		initiate_var = True
@@ -143,14 +150,14 @@ for line in sys.stdin:
 		read = line[4].split(':')
 		qname = ':'.join(read[1:-10])
 		isize = template_lengths_at_position_dic[qname]
-
+		
 		position_list.append([geno, isize, qname])
 		# print(position_list)
 
 	elif line.startswith('genotype alleles:') and not initiate_var:
-
+		
 		alleles = line.rstrip().split('|')
-		print(var,alleles, file = sys.stderr)
+		#print(var,alleles, file = sys.stderr)
 		# print(position_list)
 		if len(alleles) <= 2: #TODO: more than bi-allelic
 			allele_dic = {}
@@ -165,20 +172,31 @@ for line in sys.stdin:
 				genotype = l[0]
 				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
 				for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
-				l += [is_fetal, var_type, for_ff]
+				l += [is_fetal if is_fetal is not None else 0, var_type, for_ff]
 
 			# print(position_list)
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
 
-
 		initiate_var = True
+	# elif line.startswith('finished position'):
+		#if not initiate_var:
+			
+			# for l in position_list:
+			# 	genotype = l[0]
+			# 	is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
+			# 	for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
+			# 	l += [is_fetal, var_type, for_ff]
 
-vardb.update_is_fetal()
+			# # print(position_list)
+			# vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
+
 vardb.createDistTable()
 
 bam_reader.close()
 
 
 # TODO: when the db is complete - each qname where is_fetal=1, all appearances of this qname in the db will change to 1 - V
-# TODO: problem! needs to know also if fetal only by genotype (not by other fragments) -
+# TODO: problem! needs to know also if fetal only by genotype (not by other fragments) - 
 # for_ff_fetal, for_ff_shared
+
+
