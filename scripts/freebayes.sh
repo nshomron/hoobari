@@ -2,7 +2,6 @@
 #$ -N freeb
 #$ -S /bin/bash
 #$ -cwd
-#$ -j y
 #$ -o .$JOB_NAME.$JOB_ID.log
 
 cat /groups/nshomron/guyshapira/tmp/hoobari/debug_trimmed.txt |python3 hoobari/src/freebayes_patch.py \
