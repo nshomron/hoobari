@@ -5,7 +5,7 @@ import os
 import sys
 import subprocess
 import requests
-import sqlite3
+from db import Variants
 import vcf, vcf.utils
 import numpy as np
 import pandas as pd
@@ -21,7 +21,7 @@ import vcf_out
 import preprocessing
 from arguments import args
 
-sql_connection = sqlite3.connect(args.db)
+vardb = Variants(args.db, False)
 
 # pre-processing
 if os.path.isfile(args.preprocessing_pkl):
@@ -80,17 +80,17 @@ for tup in co_reader:
 	joint_probabilities = prediction = phred = None
 
 	cfdna_rec, parents_rec = tup
-	
+
 	printverbose('parents_rec: ', parents_rec)
 	if parents_rec:
 		printverbose('cfdna_rec: ', cfdna_rec)
 		if cfdna_rec:
-		
+
 			# calculate priors
 			maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data.GT)
 			paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
 			priors = position.calculate_priors(maternal_gt, paternal_gt)
-			
+
 			printverbose(maternal_gt, paternal_gt)
 			if maternal_gt in (0,1,2):
 
@@ -100,7 +100,7 @@ for tup in co_reader:
 										total_fetal_fraction,
 										fetal_fractions_df,
 										err_rate,
-										sql_connection,
+										vardb,
 										args.model)
 
 				# calculate posteriors
@@ -114,13 +114,13 @@ for tup in co_reader:
 					cfdna_geno_sample_dic['GL'] = (','.join(str(round(p,2)) for p in list(normalized_likelihoods)))
 					cfdna_geno_sample_dic['PG'] = (','.join(str(round(p,5)) for p in list(priors)))
 					cfdna_geno_sample_dic['PP'] = (','.join(str(round(p,5)) for p in list(posteriors)))
-					
-					
+
+
 
 
 				# parental information for INFO field
 				parents_format = parents_rec.FORMAT
-				
+
 				if parents_rec.genotype(mother_id).data.GT != '.':
 					matinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values()])
 				if parents_rec.genotype(father_id).data.GT != '.':

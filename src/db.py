@@ -103,3 +103,11 @@ class Variants(object):
     # Gets fetal and shared qnames
     def getFetalSharedQnames(self):
         return pd.read_sql_query("SELECT DISTINCT(qname) FROM fetal_lengths"), pd.read_sql_query("SELECT DISTINCT(qname) FROM shared_lengths")
+
+    # Gets all variants in specified chromosomal position
+    def getPositionVariants(self, chromosome, position):
+        return this.con.execute("""
+                            SELECT v.genotype, q.length, q.is_fetal
+                            FROM variants v, qnames q
+                            WHERE v.chromosome=":chr" AND v.position=:pos
+                """,{"chr":chromosome, "pos":position})
