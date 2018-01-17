@@ -107,7 +107,7 @@ def calculate_likelihoods(
 	variant_len = len(ref) - len(alt)
 
 	printverbose(chrom, pos)
-	pos_data = sql_connection.execute("select genotype, length, is_fetal from variants where chromosome='" + chrom + "' and pos=" + pos + ";").fetchall()
+	pos_data = vardb.getPositionVariants().fetchall()
 	printverbose(pos_data)
 
 	first = 1
