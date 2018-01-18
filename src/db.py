@@ -17,10 +17,10 @@ class Variants(object):
 
             # Drop existing database if needed
             if res.fetchone():
-                self.con.execute('DROP TABLE variants')
-                self.con.execute('DROP TABLE qnames')
-                self.con.execute('DROP VIEW shared_lengths')
-                self.con.execute('DROP VIEW fetal_lengths')
+                self.con.execute('DROP TABLE IF EXISTS variants')
+                self.con.execute('DROP TABLE IF EXISTS qnames')
+                self.con.execute('DROP VIEW IF EXISTS shared_lengths')
+                self.con.execute('DROP VIEW IF EXISTS fetal_lengths')
 
             if not res.fetchone():
 
