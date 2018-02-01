@@ -65,20 +65,23 @@ class Variants(object):
 
         query = '''
             INSERT INTO `variants`
-            (chromosome,
+            (qname,
+            chromosome,
             pos,
             genotype,
-            qname,
             var_type,
             for_ff)
             VALUES
             '''
 
+        print(line)
+
         for line in info_list:
-            query += '("{0}",{1},"{2}",{3},"{4}",{5}),'.format(chromosome,
-                        position, line[0], line[2], line[4], line[5])
+            query += '("{0}","{1}",{2},"{3}",{4},{5}),'.format(line[2],
+                    chromosome, position, line[0],  line[4], line[5])
 
         query = query[:-1]
+        print(query)
         self.con.execute(query)
         self.con.commit()
 
