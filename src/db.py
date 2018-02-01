@@ -84,10 +84,10 @@ class Variants(object):
 
     # Create views for both shared and fetal lengths
     def lengthDists(self):
-        self.execute('''
+        self.con.execute('''
         CREATE VIEW fetal_lengths AS SELECT length, qname FROM qnames WHERE is_fetal=1
         ''')
-        self.execute('''
+        self.con.execute('''
         CREATE VIEW shared_lengths AS SELECT length, qname FROM qnames WHERE is_fetal=0
         ''')
 
