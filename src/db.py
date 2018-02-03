@@ -121,7 +121,7 @@ class Variants(object):
     # Gets all variants in specified chromosomal position
     def getPositionVariants(self, chromosome, position):
         return self.con.execute("""
-                            SELECT v.genotype, q.length, q.for_ff
+                            SELECT v.genotype, q.length, q.is_fetal
                             FROM variants v, qnames q
-                            WHERE v.chromosome=":chr" AND v.pos=:pos
+                            WHERE v.chromosome=:chr AND v.pos=:pos AND q.qname=v.qname
                 """,{"chr":chromosome, "pos":position})

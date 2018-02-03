@@ -108,6 +108,7 @@ def calculate_likelihoods(
 
 	printverbose(chrom, pos)
 	pos_data = vardb.getPositionVariants(chrom, pos).fetchall()
+	printverbose('position_data:')
 	printverbose(pos_data)
 
 	first = 1
