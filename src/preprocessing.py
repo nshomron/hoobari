@@ -18,7 +18,7 @@ import re
 import parse_gt
 from stderr import *
 import vcfuid
-
+import db
 
 
 # --------- functions ----------
@@ -30,14 +30,38 @@ def get_fetal_and_shared_lengths(db_path, qnames = False):
 	and the other is similar, but for fragments which aren't necessarily fetal ("shared")
 	'''
 
-	con = Variants(db_path, probe=False)
+	# c = sqlite3.connect(db_path)
+	# c.execute('DROP VIEW IF EXISTS shared_lengths')
+	# c.execute('DROP VIEW IF EXISTS fetal_lengths')
+	# c.execute('DROP VIEW IF EXISTS shared_length_counts')
+	# c.execute('DROP VIEW IF EXISTS fetal_length_counts')
+	# c.execute('''
+	# CREATE VIEW fetal_lengths AS SELECT length, qname FROM qnames WHERE for_ff=1
+	# ''')
+	# c.execute("""
+	# 				CREATE VIEW fetal_length_counts
+	# 				AS SELECT length, COUNT(length)
+	# 				FROM fetal_lengths
+	# 				GROUP BY length
+	# 				""")
+	# c.execute('''
+	# CREATE VIEW shared_lengths AS SELECT length, qname FROM qnames WHERE for_ff=2
+	# ''')
+	# c.execute("""
+	# 				CREATE VIEW shared_length_counts
+	# 				AS SELECT length, COUNT(length)
+	# 				FROM shared_lengths
+	# 				GROUP BY length
+	# 				""")
+	# c.commit()
+	# c.close()
 
-	fetal_df = con.getFetalLengths()
-	shared_df = con.getSharedLengths()
+	con = db.Variants(db_path, probe=False)
+	fetal_lengths = con.getFetalLengths()
+	shared_lengths = con.getSharedLengths()
 
 	if qnames:
 		fetal_qnames, shared_qnames = con.getFetalSharedQnames()
-
 		return (shared_lengths, fetal_lengths, shared_qnames, fetal_qnames)
 	else:
 		return (shared_lengths, fetal_lengths)
@@ -71,6 +95,8 @@ def create_length_distributions(db_path, cores = False, db_prefix = False, qname
 		db_files = [os.path.join(db_files_loc, file) for file in os.listdir(db_files_loc) if re.match(db_file_regex, file)]
 	else:
 		db_files = [db_path]
+	printerr(db_files[0:20])
+	printerr(len(db_files))
 
 	# run the function get_fetal_and_shared_lengths for each path in db_files
 	# pooled_results = pool.map(get_fetal_and_shared_lengths, db_files)
@@ -78,27 +104,31 @@ def create_length_distributions(db_path, cores = False, db_prefix = False, qname
 	pooled_results = pool.map(get_qnames_and_alleles_with_args, db_files)
 	pool.close()
 	pool.join()
+	printerr(len(pooled_results))
 
 	# create two lists, one with all the shared fragments results, and one for the fetal fragments results
-	shared_dic_list = []
-	fetal_dic_list = []
 	if qnames:
 		shared_qnames_set = set()
 		fetal_qnames_set = set()
+	shared_lengths = pooled_results[0][0]
+	fetal_lengths = pooled_results[0][1]
 
-	for tup in pooled_results:
-		shared_dic_list.append(tup[0])
-		fetal_dic_list.append(tup[1])
+	for tup in pooled_results[1:]:
+		shared_lengths = shared_lengths.add(tup[0], fill_value=0)
+		fetal_lengths = fetal_lengths.add(tup[1], fill_value=0)
 		if qnames:
 			shared_qnames_set.update(tup[2])
 			fetal_qnames_set.update(tup[3])
-
-	# sum each list of dictionaries to create the two distributions
-	shared_lengths = shared_dic_list[0]
-	fetal_lengths = fetal_dic_list[0]
-        for shared_df,fetal_df in shared_dic_list[1:],fetal_dic_list[1:]:
-            shared_lengths.add(shared_df, fill_value=0)
-            fetal_lengths.add(fetal_df, fill_value=0)
+	printerr(shared_lengths)
+	# # sum each list of dictionaries to create the two distributions
+	# shared_lengths = shared_dic_list[0]
+	# fetal_lengths = fetal_dic_list[0]
+	# printerr(len(fetal_dic_list))
+	# printerr(len(shared_dic_list))
+	# for shared_df, fetal_df in zip(shared_dic_list[1:], fetal_dic_list[1:]):
+	# 	shared_lengths.add(shared_df, fill_value=0)
+	# 	printerr(shared_lengths)
+	# 	fetal_lengths.add(fetal_df, fill_value=0)
 
 	if qnames:
 		with open('shared_qnames_list.txt', 'w') as f:
@@ -125,8 +155,8 @@ def generate_length_distributions_plot(shared_lengths, fetal_lengths, fetal_samp
 
 def calculate_total_fetal_fraction(shared_lengths, fetal_lengths):
 
-	n_shared = int(shared_lengths.sum())
-	n_fetal = int(fetal_lengths.sum())
+	n_shared = int(shared_lengths[shared_lengths.index < 501].sum())
+	n_fetal = int(fetal_lengths[fetal_lengths.index < 501].sum())
 	total_fetal_fraction = (2 * n_fetal) / (n_shared + n_fetal)
 	printerr('total fetal fraction:', total_fetal_fraction)
 
@@ -238,7 +268,7 @@ def run_full_preprocessing(	db_path,
 	printerr('pre-processing', 'calculating fetal fraction per read template length')
 	fetal_fractions_df = create_fetal_fraction_per_length_df(shared_lengths, fetal_lengths, total_fetal_fraction, err_rate, window, max_len = max_len)
 	if plot:
-		printerr('pre-processing', 'saving length distributions plot as', fetal_sample + '.length_distributions.csv')
+		printerr('pre-processing', 'saving length distributions plot as', fetal_sample + '.length_distributions.png')
 		generate_length_distributions_plot(shared_lengths, fetal_lengths, fetal_sample)
 
 	return (err_rate, total_fetal_fraction, fetal_fractions_df)
