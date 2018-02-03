@@ -115,8 +115,10 @@ def generate_length_distributions_plot(shared_lengths, fetal_lengths, fetal_samp
 
 def calculate_total_fetal_fraction(shared_lengths, fetal_lengths):
 
-	n_shared = int(shared_lengths[shared_lengths.index < 501].sum())
-	n_fetal = int(fetal_lengths[fetal_lengths.index < 501].sum())
+	# n_shared = int(shared_lengths[shared_lengths.index < 501].sum())
+	# n_fetal = int(fetal_lengths[fetal_lengths.index < 501].sum())
+	n_shared = int(shared_lengths.sum())
+	n_fetal = int(fetal_lengths.sum())
 	total_fetal_fraction = (2 * n_fetal) / (n_shared + n_fetal)
 	printerr('total fetal fraction:', total_fetal_fraction)
 
