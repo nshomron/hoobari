@@ -150,7 +150,7 @@ def unsupported_position(rec, out_path = False):
 				'.',
 				'.',
 				':'.join(reserved_formats),
-				':'.join(['.'] * len(reserved_formats)),]
+				'.']
 		
 		printvcf('\t'.join(variant_row), out_path = out_path)
 

@@ -5,8 +5,6 @@ tmp_dir = os.path.join(os.getcwd(), 'tmp_hb')
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-m", "--maternal_sample_name", help = 'maternal sample name as appears in parents vcf')
-parser.add_argument("-p", "--paternal_sample_name", help = 'paternal sample name as appears in parents vcf')
 parser.add_argument("-f", "--fetal_sample_name", default = 'FETUS', help = 'fetal sample name to write in the outputvcf')
 parser.add_argument("-parents_vcf", "--parents_vcf", help = 'The maternal plasma cfDNA VCF file')
 parser.add_argument("-cfdna_vcf", "--cfdna_vcf", help = 'The maternal plasma cfDNA VCF file')

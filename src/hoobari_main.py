@@ -75,8 +75,7 @@ if args.region:
 
 # get sample of cfdna from its vcf file, and of the parents from the input arguments
 cfdna_id = cfdna_reader.samples[0]
-mother_id = args.maternal_sample_name
-father_id = args.paternal_sample_name
+mother_id, father_id = vardb.get_samples()
 
 # processing positions
 # iterate on both vcf files and return a tuple for each position, that contains its record from each vcf file.

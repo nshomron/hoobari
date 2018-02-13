@@ -19,6 +19,7 @@ class Variants(object):
             if res.fetchone():
                 self.con.execute('DROP TABLE IF EXISTS variants')
                 self.con.execute('DROP TABLE IF EXISTS qnames')
+                self.con.execute('DROP TABLE IF EXISTS samples')
                 self.con.execute('DROP VIEW IF EXISTS shared_lengths')
                 self.con.execute('DROP VIEW IF EXISTS fetal_lengths')
                 self.con.execute('DROP VIEW IF EXISTS shared_length_counts')
@@ -43,7 +44,9 @@ class Variants(object):
                                     FOREIGN KEY(qname) REFERENCES qnames(qname)
                                     )''')
                 self.con.execute('CREATE INDEX idx_chrom_pos ON variants (chromosome, pos)')
-
+                self.con.execute(   '''CREATE TABLE samples(
+                                    mother char(20) DEFAULT NULL,
+                                    father char(20) DEFAULT NULL)''')
 
     # Insert variants to table
     def insertVariant(self, chromosome, position, info_list):
@@ -125,3 +128,10 @@ class Variants(object):
                             FROM variants v, qnames q
                             WHERE v.chromosome=:chr AND v.pos=:pos AND q.qname=v.qname
                 """,{"chr":chromosome, "pos":position})
+
+    def create_samples_table(self, parental_samples):
+        mother, father = parental_samples
+        self.con.execute('INSERT INTO `samples` (mother, father) VALUES (:m, :f)', {'m': str(mother), 'f': str(father)})
+
+    def get_samples(self):
+        return self.con.execute('SELECT * FROM samples').fetchall()[0]

@@ -22,14 +22,18 @@ parser.add_argument("-d", "--debug", action = 'store_true', default = False, hel
 						This flag causes this information to be printed. Please
 						note that the data, if saved, ends up in a very large file.""")
 parser.add_argument("-parents_vcf", "--parents_vcf", help = 'bgzipped vcf of parents, indexed by tabix')
-parser.add_argument("-m", "--maternal_sample_name", help = 'maternal sample name as appears in parents vcf')
-parser.add_argument("-p", "--paternal_sample_name", help = 'paternal sample name as appears in parents vcf')
+parser.add_argument("-m", "--m_bam", help = 'maternal bam file')
+parser.add_argument("-p", "--p_bam", help = 'paternal bam file')
 parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name, or db prefix if hoobari is run per region')
 args = parser.parse_args()
 # ------------------------------
 
+var_type_dic = {'.': 0, 'snp': 1, 'mnp': 2, 'ins': 3, 'del': 4, 'complex': 5}
+
+
 # --------- functions ---------
-def get_parental_genotypes(parents_reader, maternal_sample_name, paternal_sample_name, chrom, position):
+def get_parental_genotypes(parents_reader, parental_samples, chrom, position):
+	maternal_sample_name, paternal_sample_name = parental_samples
 	n_rec = 0
 	for rec in parents_reader.fetch(chrom, int(position) - 1, int(position)):
 		maternal_gt = rec.genotype(maternal_sample_name).data.GT
@@ -66,23 +70,14 @@ def is_fetal_fragment(genotype, ref, alt, fetal_allele = False):
 	else:
 		return None
 
-
-def get_var_type(alleles_dic):
-
-	'''
-	code	type
-	----	----
-	1	snp
-	2	mnp
-	3	insertion
-	4	deletion
-	5	complex
-	'''
-
-	for i, var_type in enumerate(('snp', 'mnp', 'insertion', 'deletion', 'complex')):
-		if var_type in alleles_dic.keys():
-			return int(i+1), alleles_dic[var_type]
-	return 0, '.'
+def get_parental_samples_names(m_bam, p_bam):
+	parents_sample_names = []
+	for bam_file in (m_bam, p_bam):
+		bam_file_reader = pysam.AlignmentFile(os.path.join(bam_file), 'rb')
+		sample_name = bam_file_reader.header['RG'][0]['SM']
+		parents_sample_names.append(sample_name)
+		bam_file_reader.close()
+	return parents_sample_names
 
 def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal):
 	var_in_ff_positions = (maternal_gt == '0/0' and paternal_gt == '1/1') or (maternal_gt == '1/1' and paternal_gt == '0/0')
@@ -118,6 +113,7 @@ Explanation:
 
 # Initiate variants database
 bam_reader = pysam.AlignmentFile(os.path.join(args.bam_file), 'rb')
+
 parents_reader = vcf.Reader(filename = args.parents_vcf)
 if args.region:
 	dbpath = os.path.join(args.tmp_dir, args.db + '.' + str(args.region) + '.db')
@@ -125,11 +121,23 @@ else:
 	dbpath = os.path.join(args.tmp_dir, args.db + '.db')
 vardb = db.Variants(dbpath = dbpath)
 
+# get parental sample names
+parents_sample_names = get_parental_samples_names(args.m_bam, args.p_bam)
+
+# create sample table in the db
+vardb.create_samples_table(parents_sample_names)
+
+# write_variant = False
 for line in sys.stdin:
+	
 	if args.debug:
 		print(line, file = sys.stderr, end = '')
 
-	if line.startswith('position: '):
+	
+	if line.startswith('#'):
+		print(line, end = '')
+
+	elif line.startswith('position: '):
 		initiate_var = True
 		line = line.split()
 		var = line[1]
@@ -138,10 +146,9 @@ for line in sys.stdin:
 		if initiate_var:
 			chrom, position = var.split(':')
 			maternal_gt, paternal_gt = get_parental_genotypes(	parents_reader,
-										args.maternal_sample_name,
-										args.paternal_sample_name,
-										chrom,
-										position)
+																parents_sample_names,
+																chrom,
+																position)
 			template_lengths_at_position_dic = get_reads_tlen(bam_reader, chrom, position)
 			position_list = []
 			initiate_var = False
@@ -154,49 +161,35 @@ for line in sys.stdin:
 		position_list.append([geno, isize, qname])
 		# print(position_list)
 
-	elif line.startswith('genotype alleles:') and not initiate_var:
+	elif 'TYPE=' in line:
 
-		alleles = line.rstrip().split('|')
-		#print(var,alleles, file = sys.stderr)
-		# print(position_list)
-		if len(alleles) <= 2: #TODO: more than bi-allelic
-			allele_dic = {}
-			for allele in alleles:
-				allele_split = allele.replace('genotype alleles: ', '').split(':')
-				allele_dic[allele_split[0]] = allele_split[-1]
-			#ref, alt = former_line.split('\t')[3:5]
-			ref = allele_dic['reference']
-			var_type, alt = get_var_type(allele_dic)
+		line_list = line.rstrip().split('\t')
+			
+		ref, alt = line_list[3:5]
+		one_alt_allele = len(alt.split(',')) == 1
+
+		if one_alt_allele:
+
+			var_type_string = line_list[7].split('TYPE=')[1].split(';')[0]
+			var_type = var_type_dic[var_type_string]
+			
+			format_fields = line_list[8].split(':')
 
 			for l in position_list:
-				genotype = l[0]
+				genotype = l[0]	
 				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
-				for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
+				for_ff = use_for_fetal_fraction_calculation(maternal_gt,
+															paternal_gt,
+															var_type,
+															is_fetal)
 				l += [is_fetal if is_fetal is not None else 0, var_type, for_ff]
 
 			# print(position_list)
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
-
-		initiate_var = True
-	# elif line.startswith('finished position'):
-		#if not initiate_var:
-
-			# for l in position_list:
-			# 	genotype = l[0]
-			# 	is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
-			# 	for_ff = use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal)
-			# 	l += [is_fetal, var_type, for_ff]
-
-			# # print(position_list)
-			# vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
+			print(line, end = '')
 
 vardb.lengthDists()
 
 bam_reader.close()
-
-
-# TODO: when the db is complete - each qname where is_fetal=1, all appearances of this qname in the db will change to 1 - V
-# TODO: problem! needs to know also if fetal only by genotype (not by other fragments) -
-# for_ff_fetal, for_ff_shared
 
 
