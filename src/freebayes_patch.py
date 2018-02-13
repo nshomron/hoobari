@@ -146,9 +146,9 @@ for line in sys.stdin:
 		if initiate_var:
 			chrom, position = var.split(':')
 			maternal_gt, paternal_gt = get_parental_genotypes(	parents_reader,
-																parents_sample_names,
-																chrom,
-																position)
+										parents_sample_names,
+										chrom,
+										position)
 			template_lengths_at_position_dic = get_reads_tlen(bam_reader, chrom, position)
 			position_list = []
 			initiate_var = False
