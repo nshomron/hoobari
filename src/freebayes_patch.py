@@ -177,11 +177,14 @@ for line in sys.stdin:
 
 			for l in position_list:
 				genotype = l[0]	
-				is_fetal = is_fetal_fragment(genotype, ref, alt, fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
-				for_ff = use_for_fetal_fraction_calculation(maternal_gt,
-															paternal_gt,
-															var_type,
-															is_fetal)
+				is_fetal = is_fetal_fragment(	genotype,
+								ref,
+								alt,
+								fetal_allele = get_fetal_allele_type(maternal_gt, paternal_gt))
+				for_ff = use_for_fetal_fraction_calculation(	maternal_gt,
+										paternal_gt,
+										var_type,
+										is_fetal)
 				l += [is_fetal if is_fetal is not None else 0, var_type, for_ff]
 
 			# print(position_list)
