@@ -168,7 +168,13 @@ for line in sys.stdin:
 		ref, alt = line_list[3:5]
 		one_alt_allele = len(alt.split(',')) == 1
 
-		if one_alt_allele:
+		'''
+		if a variant exists in the parental VCF but no reads were found in the cfDNA, no lines will
+		start with "haplo_obs", therefore initiate_var will still be set as True. So only write to db
+		if initiate_var is set as False.
+		'''
+		reads_were_found_in_the_cfdna = not initiate_var
+		if one_alt_allele and reads_were_found_in_the_cfdna:
 
 			var_type_string = line_list[7].split('TYPE=')[1].split(';')[0]
 			var_type = var_type_dic[var_type_string]
