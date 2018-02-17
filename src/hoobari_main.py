@@ -26,24 +26,15 @@ vardb = Variants(args.db, probe=False)
 
 # pre-processing
 # calculate the total fetal fraction and a table of fetal-fraction per fragment size
-# calcuation results can be saved to a pkl file, and read from a pkl as well
 # TODO: note that the error rate isn't actually used in the model yet
-if os.path.isfile(args.preprocessing_pkl):
-	time.sleep(5) # in case the file pkl have just been created and is still being written
-	with open(args.preprocessing_pkl, 'rb') as f:
-		err_rate, total_fetal_fraction, fetal_fractions_df = pickle.load(f)
-else:
-	err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_preprocessing(	args.db,
-													args.fetal_sample_name,
-													cores = args.cores,
-													db_prefix = args.db_prefix,
-													window = args.window,
-													max_len = 500,
-													plot = args.plot_lengths,
-													qnames = args.qnames)
-	if args.preprocessing_pkl:
-		with open(args.preprocessing_pkl, 'wb') as f:
-			pickle.dump((err_rate, total_fetal_fraction, fetal_fractions_df), f)
+err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_preprocessing(	args.db,
+												args.fetal_sample_name,
+												cores = args.cores,
+												db_prefix = args.db_prefix,
+												window = args.window,
+												max_len = 500,
+												plot = args.plot_lengths,
+												qnames = args.qnames)
 
 # create vcf files iterators
 cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
@@ -127,25 +118,6 @@ for tup in co_reader:
 				cfdna_geno_sample_dic['GL'] = (','.join(str(round(p,2)) for p in list(normalized_likelihoods)))
 				cfdna_geno_sample_dic['PG'] = (','.join(str(round(p,5)) for p in list(priors)))
 				cfdna_geno_sample_dic['PP'] = (','.join(str(round(p,5)) for p in list(posteriors)))
-
-
-			# TODO: MARKED FOR DELETION
-			# # process the parental information for the INFO field
-			# parents_format = parents_rec.FORMAT
-			# parents_format_len = parents_rec.FORMAT.count(':') + 1
-			# empty_info = ':'.join(['.'] * parents_format_len)
-
-			# # get maternal info
-			# if parents_rec.genotype(mother_id).data.GT != '.':
-			# 	matinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, mother_id).values()])
-			# else:
-			# 	matinfo = empty_info
-
-			# # get paternal info
-			# if parents_rec.genotype(father_id).data.GT != '.':
-			# 	patinfo = ':'.join([str(i) for i in vcf_out.rec_sample_to_string(parents_rec, father_id).values()])
-			# else:
-			# 	patinfo = empty_info
 
 
 			# for each parent, for all the data in its sample, create an instance that will be printed in the output INFO

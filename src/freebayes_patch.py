@@ -173,8 +173,8 @@ for line in sys.stdin:
 		start with "haplo_obs", therefore initiate_var will still be set as True. So only write to db
 		if initiate_var is set as False.
 		'''
-		reads_were_found_in_the_cfdna = not initiate_var
-		if one_alt_allele and reads_were_found_in_the_cfdna:
+		# reads_were_found_in_the_cfdna = not initiate_var
+		if one_alt_allele:# and reads_were_found_in_the_cfdna:
 
 			var_type_string = line_list[7].split('TYPE=')[1].split(';')[0]
 			var_type = var_type_dic[var_type_string]
@@ -195,6 +195,7 @@ for line in sys.stdin:
 
 			# print(position_list)
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
+		
 			print(line, end = '')
 
 vardb.lengthDists()

@@ -126,7 +126,7 @@ def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 
 	# columns 9-10
 	if format_and_gt_dic == '.':
-		row_list += [':'.join(reserved_formats), ':'.join(['.'] * len(reserved_formats))]
+		row_list += [':'.join(reserved_formats), '.']
 	else:
 		format_list = list(format_and_gt_dic.keys())
 		fetal_gt_list = list(format_and_gt_dic.values())
