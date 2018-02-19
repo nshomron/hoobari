@@ -81,69 +81,60 @@ for tup in co_reader:
 	printverbose('parents_rec: ', parents_rec)
 	printverbose('cfdna_rec: ', cfdna_rec)
 
-	if parents_rec and cfdna_rec:
+	if not parents_rec:
+		vcf_out.unsupported_position(cfdna_rec, out_path = args.vcf_output)
+	else: # if parental and cfdna record
 
-		# calculate priors for the position
+		# fetch parental genotypes
 		maternal_gt = parse_gt.str_to_int(parents_rec.genotype(mother_id).data.GT)
 		paternal_gt = parse_gt.str_to_int(parents_rec.genotype(father_id).data.GT)
-		priors = position.calculate_priors(maternal_gt, paternal_gt)
-
 		printverbose(maternal_gt, paternal_gt)
 
-		# for now, only positions where the mother is 0/0, 0/1 or 1/1 are supported
-		if maternal_gt in (0,1,2):
-
-			# calculate likelihoods for the position
-			likelihoods = position.calculate_likelihoods(	cfdna_rec,
-									maternal_gt,
-									total_fetal_fraction,
-									fetal_fractions_df,
-									err_rate,
-									vardb,
-									args.model)
-
-			# calculate posteriors for the position
-			posteriors, prediction, qual = position.calculate_posteriors(priors, likelihoods)
-
-
-			## process the output entry
-
-			# create normalized likelihoods for the output vcf
-			normalized_likelihoods = position.likelihoods_to_phred_scale(likelihoods)
-
-			# fetal information for the sample and FORMAT fields
-			cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
-			if cfdna_geno_sample_dic != '.':
-				cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
-				cfdna_geno_sample_dic['GL'] = (','.join(str(round(p,2)) for p in list(normalized_likelihoods)))
-				cfdna_geno_sample_dic['PG'] = (','.join(str(round(p,5)) for p in list(priors)))
-				cfdna_geno_sample_dic['PP'] = (','.join(str(round(p,5)) for p in list(posteriors)))
-
-
-			# for each parent, for all the data in its sample, create an instance that will be printed in the output INFO
-			rec_info_list = []
-			for parent_sample in (mother_id, father_id):
-				for field in parents_rec.FORMAT.split(':'):
-					if parent_sample == mother_id:
-						prefix = 'M'
-					elif parent_sample == father_id:
-						prefix = 'P'
-					parents_sample_field_data = parents_rec.genotype(parent_sample)[field]
-					if type(parents_sample_field_data) is list: # some fields contain a few values
-						parents_sample_field_data = ','.join([str(i) for i in parents_sample_field_data])
-					rec_info_list.append((prefix + field, parents_sample_field_data))
-			rec_info_list.append(('MPQ', str(parents_rec.QUAL)))
-			rec_info_dic = OrderedDict(rec_info_list)
-
-			# write var out (to file passed with -v or to output)
-			vcf_out.print_var(cfdna_rec, qual, rec_info_dic, cfdna_geno_sample_dic, out_path = args.vcf_output)
-
+		
+		if not cfdna_rec:
+			cfdna_rec = parents_rec
+			qual = 0
+			cfdna_geno_sample_dic = '.'
+		elif maternal_gt not in (0,1,2):
+			qual = 0
+			cfdna_geno_sample_dic = '.'
 		else:
-			vcf_out.unsupported_position(cfdna_rec, out_path = args.vcf_output)
+			# for now, only positions where the mother is 0/0, 0/1 or 1/1 are supported
+			if maternal_gt in (0,1,2):
+			
+				# calculate priors for the position
+				priors = position.calculate_priors(maternal_gt, paternal_gt)
+				
+				# calculate likelihoods for the position
+				likelihoods = position.calculate_likelihoods(	cfdna_rec,
+										maternal_gt,
+										total_fetal_fraction,
+										fetal_fractions_df,
+										err_rate,
+										vardb,
+										args.model)
 
-	else:
-		if parents_rec is None:
-			empty_rec = cfdna_rec
-		else:
-			empty_rec = parents_rec
-		vcf_out.unsupported_position(empty_rec, out_path = args.vcf_output)
+				# calculate posteriors for the position
+				posteriors, prediction, qual = position.calculate_posteriors(priors, likelihoods)
+
+
+				## process the output entry
+
+				# create normalized likelihoods for the output vcf
+				normalized_likelihoods = position.likelihoods_to_phred_scale(likelihoods)
+
+				# fetal information for the sample and FORMAT fields
+				cfdna_geno_sample_dic = vcf_out.rec_sample_to_string(cfdna_rec, cfdna_id)
+				if cfdna_geno_sample_dic != '.':
+					cfdna_geno_sample_dic['GT'] = parse_gt.int_to_str(prediction)
+					cfdna_geno_sample_dic['GL'] = (','.join(str(round(p,2)) for p in list(normalized_likelihoods)))
+					cfdna_geno_sample_dic['PG'] = (','.join(str(round(p,5)) for p in list(priors)))
+					cfdna_geno_sample_dic['PP'] = (','.join(str(round(p,5)) for p in list(posteriors)))
+
+
+		# for each parent, for all the data in its sample, create an instance that will be printed in the output INFO
+		rec_info_dic = vcf_out.parents_gt_to_info(mother_id, father_id, parents_rec)
+
+		# write var out (to file passed with -v or to output)
+		vcf_out.print_var(cfdna_rec, qual, rec_info_dic, cfdna_geno_sample_dic, out_path = args.vcf_output)
+	

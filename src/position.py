@@ -107,7 +107,7 @@ def calculate_likelihoods(
 	variant_len = len(ref) - len(alt)
 
 	printverbose(chrom, pos)
-	pos_data = vardb.getPositionVariants(chrom, pos).fetchall()
+	pos_data = vardb.getPositionVariants(chrom, pos, model).fetchall()
 	printverbose('position_data:')
 	printverbose(pos_data)
 

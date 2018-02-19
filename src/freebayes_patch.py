@@ -25,6 +25,7 @@ parser.add_argument("-parents_vcf", "--parents_vcf", help = 'bgzipped vcf of par
 parser.add_argument("-m", "--m_bam", help = 'maternal bam file')
 parser.add_argument("-p", "--p_bam", help = 'paternal bam file')
 parser.add_argument("-db", "--db", default = 'hoobari', help = 'db name, or db prefix if hoobari is run per region')
+parser.add_argument("-origin", "--origin", action = 'store_true', help = 'use this if hoobari will be run with -model origin')
 args = parser.parse_args()
 # ------------------------------
 
@@ -173,8 +174,8 @@ for line in sys.stdin:
 		start with "haplo_obs", therefore initiate_var will still be set as True. So only write to db
 		if initiate_var is set as False.
 		'''
-		# reads_were_found_in_the_cfdna = not initiate_var
-		if one_alt_allele:# and reads_were_found_in_the_cfdna:
+		reads_were_found_in_the_cfdna = not initiate_var
+		if one_alt_allele and reads_were_found_in_the_cfdna:
 
 			var_type_string = line_list[7].split('TYPE=')[1].split(';')[0]
 			var_type = var_type_dic[var_type_string]
@@ -196,7 +197,10 @@ for line in sys.stdin:
 			# print(position_list)
 			vardb.insertVariant(chrom.replace('chr',''), int(position), position_list)
 		
-			print(line, end = '')
+		print(line, end = '')
+
+if args.origin:
+	vardb.createQnamesTable()
 
 vardb.lengthDists()
 

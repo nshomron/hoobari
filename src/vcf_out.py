@@ -110,6 +110,21 @@ def rec_sample_to_string(rec, sample):
 		
 	return format_and_gt_dic
 
+def parents_gt_to_info(mother_id, father_id, parents_rec):
+	rec_info_list = []
+	for parent_sample in (mother_id, father_id):
+		for field in parents_rec.FORMAT.split(':'):
+			if parent_sample == mother_id:
+				prefix = 'M'
+			elif parent_sample == father_id:
+				prefix = 'P'
+			parents_sample_field_data = parents_rec.genotype(parent_sample)[field]
+			if type(parents_sample_field_data) is list: # some fields contain a few values
+				parents_sample_field_data = ','.join([str(i) for i in parents_sample_field_data])
+			rec_info_list.append((prefix + field, parents_sample_field_data))
+	rec_info_list.append(('MPQ', str(parents_rec.QUAL)))
+	return OrderedDict(rec_info_list)
+
 def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 
 	row_list = []
