@@ -4,6 +4,7 @@ import parse_gt
 import sys
 from time import strftime
 from stderr import *
+import gzip
 
 reserved_formats = ('GT', 'DP', 'AD', 'RO', 'QR', 'AO', 'QA', 'GL', 'PG', 'PP')
 
@@ -84,6 +85,30 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 	sep = '\n',
 	out_path = output_path)
 
+	# get cfdna vcf infos header
+	cfdna_vcf_compressed = cfdna_vcf_reader.filename.endswith('.gz')
+	if cfdna_vcf_compressed:
+		f = gzip.open(cfdna_vcf_reader.filename, 'rb')
+		cfdna_vcf_infos_list = [line.decode().strip() for line in f if line.decode().startswith('##INFO')]
+	else:
+		f = open(cfdna_vcf_reader.filename, 'r')
+		cfdna_vcf_infos_list = [line.strip() for line in f if line.startswith('##INFO')]
+	f.close()
+	# get parents vcf infos header
+	parents_vcf_compressed = parents_vcf_reader.filename.endswith('.gz')
+	if parents_vcf_compressed:
+		f = gzip.open(parents_vcf_reader.filename, 'rb')
+		parents_vcf_infos_list = [line.decode().strip() for line in f if line.decode().startswith('##INFO')]
+	else:
+		f = open(parents_vcf_reader.filename, 'r')
+		parents_vcf_infos_list = [line.strip() for line in f if line.startswith(b'##INFO')]
+	f.close()
+	parents_vcf_infos_list = [l.replace('ID=','ID=P') for l in parents_vcf_infos_list]
+	parents_vcf_infos_list = [l.replace('Description="','Description="Parents ') for l in parents_vcf_infos_list]
+
+	printvcf('\n'.join(cfdna_vcf_infos_list), sep = '\n', out_path = output_path)
+	printvcf('\n'.join(parents_vcf_infos_list), sep = '\n', out_path = output_path)
+
 	# print column names
 	vcf_columns = ['#CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT'] + [fetal_sample_name]
 	printvcf('\t'.join(vcf_columns), out_path = output_path)
@@ -117,15 +142,24 @@ def parents_gt_to_info(mother_id, father_id, parents_rec):
 			if parent_sample == mother_id:
 				prefix = 'M'
 			elif parent_sample == father_id:
-				prefix = 'P'
+				prefix = 'F'
 			parents_sample_field_data = parents_rec.genotype(parent_sample)[field]
 			if type(parents_sample_field_data) is list: # some fields contain a few values
 				parents_sample_field_data = ','.join([str(i) for i in parents_sample_field_data])
-			rec_info_list.append((prefix + field, parents_sample_field_data))
-	rec_info_list.append(('MPQ', str(parents_rec.QUAL)))
-	return OrderedDict(rec_info_list)
+			rec_info_list.append(prefix + field + '=' + str(parents_sample_field_data))
+	rec_info_list.append('PQ=' + str(parents_rec.QUAL))
+	return ';'.join(rec_info_list)
 
-def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
+def info_to_string(info_dic):
+	rec_info_list = []
+	for field in info_dic:
+		field_data = info_dic[field]
+		if type(field_data) is list:
+			field_data = ','.join([str(i) for i in field_data])
+		rec_info_list.append(field + '=' + str(field_data))
+	return ';'.join(rec_info_list)
+
+def print_var(rec, phred, pos_info, format_and_gt_dic, out_path = False):
 
 	row_list = []
 
@@ -136,8 +170,9 @@ def print_var(rec, phred, pos_info_dic, format_and_gt_dic, out_path = False):
 	row_list += [str(phred), '.']
 
 	# column 8
-	info_list = [str(k) + '=' + str(pos_info_dic[k]) for k in pos_info_dic]
-	row_list += [';'.join(info_list)]
+	# info_list = [str(k) + '=' + str(pos_info_dic[k]) for k in pos_info_dic]
+	# row_list += [';'.join(info_list)]
+	row_list += [pos_info]
 
 	# columns 9-10
 	if format_and_gt_dic == '.':

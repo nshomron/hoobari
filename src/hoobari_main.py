@@ -75,6 +75,7 @@ co_reader = vcf.utils.walk_together(cfdna_reader, parents_reader)
 for tup in co_reader:
 	# reset prediction and QUAL
 	prediction = qual = None
+	rec_info = []
 
 	cfdna_rec, parents_rec = tup
 
@@ -131,10 +132,15 @@ for tup in co_reader:
 					cfdna_geno_sample_dic['PG'] = (','.join(str(round(p,5)) for p in list(priors)))
 					cfdna_geno_sample_dic['PP'] = (','.join(str(round(p,5)) for p in list(posteriors)))
 
+				rec_info.append(vcf_out.info_to_string(cfdna_rec.INFO))
 
 		# for each parent, for all the data in its sample, create an instance that will be printed in the output INFO
-		rec_info_dic = vcf_out.parents_gt_to_info(mother_id, father_id, parents_rec)
+		rec_info.append(vcf_out.parents_gt_to_info(mother_id, father_id, parents_rec))
+		parental_info_for_info = vcf_out.info_to_string(parents_rec.INFO)
+		parental_info_for_info = 'P' + parental_info_for_info.replace(';',';P')
+		rec_info.append(parental_info_for_info)
+		rec_info = ';'.join(rec_info)
 
 		# write var out (to file passed with -v or to output)
-		vcf_out.print_var(cfdna_rec, qual, rec_info_dic, cfdna_geno_sample_dic, out_path = args.vcf_output)
+		vcf_out.print_var(cfdna_rec, qual, rec_info, cfdna_geno_sample_dic, out_path = args.vcf_output)
 	
