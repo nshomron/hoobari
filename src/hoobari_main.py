@@ -136,9 +136,13 @@ for tup in co_reader:
 
 		# for each parent, for all the data in its sample, create an instance that will be printed in the output INFO
 		rec_info.append(vcf_out.parents_gt_to_info(mother_id, father_id, parents_rec))
+		
 		parental_info_for_info = vcf_out.info_to_string(parents_rec.INFO)
 		parental_info_for_info = 'P' + parental_info_for_info.replace(';',';P')
 		rec_info.append(parental_info_for_info)
+		
+		rec_info = rec_info.replace('None', '.')
+
 		rec_info = ';'.join(rec_info)
 
 		# write var out (to file passed with -v or to output)

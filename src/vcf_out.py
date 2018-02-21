@@ -53,7 +53,7 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 
 	# print format and info header fields	
 	printvcf(
-	'##FORMAT=<ID=GT,Number=1,Type=String,Source="hoobari",Description="Genotype",Source="hoobari">',
+	'##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype",Source="hoobari">',
 	'##FORMAT=<ID=DP,Number=1,Type=String,Description="Read Depth">',
 	'##FORMAT=<ID=AD,Number=R,Type=String,Description="Number of observation for each allele">',
 	'##FORMAT=<ID=RO,Number=1,Type=String,Description="Reference allele observation count">',
@@ -61,27 +61,27 @@ def make_header(cfdna_vcf_reader, parents_vcf_reader, input_command, fetal_sampl
 	'##FORMAT=<ID=AO,Number=A,Type=String,Description="Alternate allele observation count">',
 	'##FORMAT=<ID=QA,Number=A,Type=String,Description="Sum of quality of the alternate observations">',
 	'##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy",Source="hoobari">',
-	'##FORMAT=<ID=PG,Number=G,Type=String,Description="P(Genotype), Per-site genotype prior probabilities",Source="hoobari">',
-	'##FORMAT=<ID=PP,Number=G,Type=String,Description="P(Posterior), Per-site genotype posterior probabilities",Source="hoobari">',
-	'##INFO=<ID=MGT,Number=1,Type=String,Description="Maternal Genotype">',
-	'##INFO=<ID=MGQ,Number=1,Type=Float,Description="Maternal Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
-	'##INFO=<ID=MGL,Number=G,Type=Float,Description="Maternal Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
-	'##INFO=<ID=MAD,Number=R,Type=Integer,Description="Maternal Number of observation for each allele">',
-	'##INFO=<ID=MDP,Number=1,Type=Integer,Description="Maternal Read Depth">',
-	'##INFO=<ID=MRO,Number=1,Type=Integer,Description="Maternal Reference allele observation count">',
-	'##INFO=<ID=MQR,Number=1,Type=Integer,Description="Maternal Sum of quality of the reference observations">',
-	'##INFO=<ID=MAO,Number=A,Type=Integer,Description="Maternal Alternate allele observation count">',
-	'##INFO=<ID=MQA,Number=A,Type=Integer,Description="Maternal Sum of quality of the alternate observations">',
-	'##INFO=<ID=PGT,Number=1,Type=String,Description="Paternal Genotype">',
-	'##INFO=<ID=PGQ,Number=1,Type=Float,Description="Paternal Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
-	'##INFO=<ID=PGL,Number=G,Type=Float,Description="Paternal Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
-	'##INFO=<ID=PAD,Number=R,Type=Integer,Description="Paternal Number of observation for each allele">',
-	'##INFO=<ID=PDP,Number=1,Type=Integer,Description="Paternal Read Depth">',
-	'##INFO=<ID=PRO,Number=1,Type=Integer,Description="Paternal Reference allele observation count">',
-	'##INFO=<ID=PQR,Number=1,Type=Integer,Description="Paternal Sum of quality of the reference observations">',
-	'##INFO=<ID=PAO,Number=A,Type=Integer,Description="Paternal Alternate allele observation count">',
-	'##INFO=<ID=PQA,Number=A,Type=Integer,Description="Paternal Sum of quality of the alternate observations">',
-	'##INFO=<ID=MPQ,Number=.,Type=Float,Description="Maternal and Paternal QUAL score from the parental vcf">',
+	'##FORMAT=<ID=PG,Number=G,Type=Float,Description="P(Genotype), Per-site genotype prior probabilities",Source="hoobari">',
+	'##FORMAT=<ID=PP,Number=G,Type=Float,Description="P(Posterior), Per-site genotype posterior probabilities",Source="hoobari">',
+	'##INFO=<ID=MGT,Number=1,Type=String,Description="Mother\' Genotype">',
+	'##INFO=<ID=MGQ,Number=1,Type=Float,Description="Mother\'s Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
+	'##INFO=<ID=MGL,Number=G,Type=Float,Description="Mother\'s Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
+	'##INFO=<ID=MAD,Number=R,Type=Integer,Description="Mother\'s Number of observation for each allele">',
+	'##INFO=<ID=MDP,Number=1,Type=Integer,Description="Mother\'s Read Depth">',
+	'##INFO=<ID=MRO,Number=1,Type=Integer,Description="Mother\'s Reference allele observation count">',
+	'##INFO=<ID=MQR,Number=1,Type=Integer,Description="Mother\'s Sum of quality of the reference observations">',
+	'##INFO=<ID=MAO,Number=A,Type=Integer,Description="Mother\'s Alternate allele observation count">',
+	'##INFO=<ID=MQA,Number=A,Type=Integer,Description="Mother\'s Sum of quality of the alternate observations">',
+	'##INFO=<ID=FGT,Number=1,Type=String,Description="Father\'s Genotype">',
+	'##INFO=<ID=FGQ,Number=1,Type=Float,Description="Father\'s Genotype Quality, the Phred-scaled marginal (or unconditional) probability of the called genotype">',
+	'##INFO=<ID=FGL,Number=G,Type=Float,Description="Father\'s Genotype Likelihood, log10-scaled likelihoods of the data given the called genotype for each possible genotype generated from the reference and alternate alleles given the sample ploidy">',
+	'##INFO=<ID=FAD,Number=R,Type=Integer,Description="Father\'s Number of observation for each allele">',
+	'##INFO=<ID=FDP,Number=1,Type=Integer,Description="Father\'s Read Depth">',
+	'##INFO=<ID=FRO,Number=1,Type=Integer,Description="Father\'s Reference allele observation count">',
+	'##INFO=<ID=FQR,Number=1,Type=Integer,Description="Father\'s Sum of quality of the reference observations">',
+	'##INFO=<ID=FAO,Number=A,Type=Integer,Description="Father\'s Alternate allele observation count">',
+	'##INFO=<ID=FQA,Number=A,Type=Integer,Description="Father\'s Sum of quality of the alternate observations">',
+	'##INFO=<ID=MFQ,Number=1,Type=Float,Description="Mother\'s and Father\'s QUAL score from the parental vcf">',
 	sep = '\n',
 	out_path = output_path)
 
@@ -147,7 +147,7 @@ def parents_gt_to_info(mother_id, father_id, parents_rec):
 			if type(parents_sample_field_data) is list: # some fields contain a few values
 				parents_sample_field_data = ','.join([str(i) for i in parents_sample_field_data])
 			rec_info_list.append(prefix + field + '=' + str(parents_sample_field_data))
-	rec_info_list.append('PQ=' + str(parents_rec.QUAL))
+	rec_info_list.append('MFQ=' + str(parents_rec.QUAL))
 	return ';'.join(rec_info_list)
 
 def info_to_string(info_dic):
