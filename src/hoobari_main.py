@@ -141,9 +141,9 @@ for tup in co_reader:
 		parental_info_for_info = 'P' + parental_info_for_info.replace(';',';P')
 		rec_info.append(parental_info_for_info)
 		
-		rec_info = rec_info.replace('None', '.')
-
 		rec_info = ';'.join(rec_info)
+
+		rec_info = rec_info.replace('None', '.')
 
 		# write var out (to file passed with -v or to output)
 		vcf_out.print_var(cfdna_rec, qual, rec_info, cfdna_geno_sample_dic, out_path = args.vcf_output)
