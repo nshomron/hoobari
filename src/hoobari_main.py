@@ -36,6 +36,11 @@ err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_prep
 												plot = args.plot_lengths,
 												qnames = args.qnames)
 
+# with open('preprocessing_info.txt', 'w') as pp_info:
+# 	print('total_fetal_fraction', total_fetal_fraction, file = pp_info)
+# 	print('err_rate', err_rate, file = pp_info)
+# 	fetal_fractions_df.to_csv(pp_info, sep = '\t')
+
 # create vcf files iterators
 cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
 parents_reader = vcf.Reader(filename = args.parents_vcf)

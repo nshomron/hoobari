@@ -78,7 +78,7 @@ class Variants(object):
         CREATE VIEW fetal_lengths AS SELECT length, qname FROM variants WHERE for_ff=1 GROUP BY qname
         ''')
         self.con.execute("""
-                        CREATE VIEW fetal_length_counts
+                        CREATE TABLE fetal_length_counts
                         AS SELECT length, COUNT(length)
                         FROM fetal_lengths
                         GROUP BY length
@@ -87,7 +87,7 @@ class Variants(object):
         CREATE VIEW shared_lengths AS SELECT length, qname FROM variants WHERE for_ff=2 GROUP BY qname
         ''')
         self.con.execute("""
-                        CREATE VIEW shared_length_counts
+                        CREATE TABLE shared_length_counts
                         AS SELECT length, COUNT(length)
                         FROM shared_lengths
                         GROUP BY length

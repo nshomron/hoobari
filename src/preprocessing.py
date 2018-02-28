@@ -23,21 +23,21 @@ import db
 
 # --------- functions ----------
 
-def get_fetal_and_shared_lengths(db_path, qnames = False):
-	'''
-	input - path to the database from hoobari's patch
-	output - a tuple with two dictionaries, one contains the counts of fetal fragments at different lengths,
-	and the other is similar, but for fragments which aren't necessarily fetal ("shared")
-	'''
-	con = db.Variants(db_path, probe=False)
-	fetal_lengths = con.getFetalLengths()
-	shared_lengths = con.getSharedLengths()
+# def get_fetal_and_shared_lengths(db_path, qnames = False):
+# 	'''
+# 	input - path to the database from hoobari's patch
+# 	output - a tuple with two dictionaries, one contains the counts of fetal fragments at different lengths,
+# 	and the other is similar, but for fragments which aren't necessarily fetal ("shared")
+# 	'''
+# 	con = db.Variants(db_path, probe=False)
+# 	fetal_lengths = con.getFetalLengths()
+# 	shared_lengths = con.getSharedLengths()
 
-	if qnames:
-		fetal_qnames, shared_qnames = con.getFetalSharedQnames()
-		return (shared_lengths, fetal_lengths, shared_qnames, fetal_qnames)
-	else:
-		return (shared_lengths, fetal_lengths)
+# 	if qnames:
+# 		fetal_qnames, shared_qnames = con.getFetalSharedQnames()
+# 		return (shared_lengths, fetal_lengths, shared_qnames, fetal_qnames)
+# 	else:
+# 		return (shared_lengths, fetal_lengths)
 
 
 def create_length_distributions(db_path, cores = False, db_prefix = False, qnames = False):
@@ -52,13 +52,13 @@ def create_length_distributions(db_path, cores = False, db_prefix = False, qname
 
 	# if the number of cores was specified - use it. if not, and there's more than 1 core, use all cores
 	# except for one.
-	if cores:
-		pool = Pool(int(cores))
-	else:
-		if cpu_count() > 1:
-			pool = Pool(cpu_count() - 1)
-		else:
-			pool = Pool(1)
+	# if cores:
+	# 	pool = Pool(int(cores))
+	# else:
+	# 	if cpu_count() > 1:
+	# 		pool = Pool(cpu_count() - 1)
+	# 	else:
+	# 		pool = Pool(1)
 
 	# if db_prefix was given as an argument, work for all databases with that prefix.
 	db_path = os.path.abspath(db_path)
@@ -71,24 +71,27 @@ def create_length_distributions(db_path, cores = False, db_prefix = False, qname
 
 	# run the function get_fetal_and_shared_lengths for each path in db_files
 	# pooled_results = pool.map(get_fetal_and_shared_lengths, db_files)
-	get_qnames_and_alleles_with_args = partial(get_fetal_and_shared_lengths, qnames = qnames)
-	pooled_results = pool.map(get_qnames_and_alleles_with_args, db_files)
-	pool.close()
-	pool.join()
+	# get_qnames_and_alleles_with_args = partial(get_fetal_and_shared_lengths, qnames = qnames)
+	# pooled_results = pool.map(get_qnames_and_alleles_with_args, db_files)
+	# pool.close()
+	# pool.join()
 
 	# create two lists, one with all the shared fragments results, and one for the fetal fragments results
+	
+	con = db.Variants(db_files[0], probe=False)
+	shared_lengths = con.getSharedLengths()
+	fetal_lengths = con.getFetalLengths()
 	if qnames:
-		shared_qnames_set = set()
-		fetal_qnames_set = set()
-	shared_lengths = pooled_results[0][0]
-	fetal_lengths = pooled_results[0][1]
+		fetal_qnames, shared_qnames = con.getFetalSharedQnames()
 
-	for tup in pooled_results[1:]:
-		shared_lengths = shared_lengths.add(tup[0], fill_value=0)
-		fetal_lengths = fetal_lengths.add(tup[1], fill_value=0)
+	for db_path in db_files[1:]:
+		con = db.Variants(db_path, probe=False)
+		shared_lengths = shared_lengths.add(con.getSharedLengths(), fill_value=0)
+		fetal_lengths = fetal_lengths.add(con.getFetalLengths(), fill_value=0)
 		if qnames:
-			shared_qnames_set.update(tup[2])
-			fetal_qnames_set.update(tup[3])
+			tup = con.getFetalSharedQnames()
+			shared_qnames_set.update(tup[1])
+			fetal_qnames_set.update(tup[0])
 
 	if qnames:
 		with open('shared_qnames_list.txt', 'w') as f:
