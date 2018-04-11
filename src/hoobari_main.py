@@ -28,8 +28,10 @@ vardb = Variants(args.db, probe=False)
 # calculate the total fetal fraction and a table of fetal-fraction per fragment size
 # TODO: note that the error rate isn't actually used in the model yet
 err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_preprocessing(	args.db,
+												args.fetal_fraction,
+												args.calculate_empirical_ff_dist,
 												args.fetal_sample_name,
-												cores = args.cores,
+												args.cores,
 												db_prefix = args.db_prefix,
 												window = args.window,
 												max_len = 500,
@@ -71,7 +73,7 @@ if args.region:
 
 # get sample of cfdna from its vcf file, and of the parents from the input arguments
 cfdna_id = cfdna_reader.samples[0]
-mother_id, father_id = vardb.get_samples()
+mother_id, father_id = vardb.get_samples()	
 
 # processing positions
 # iterate on both vcf files and return a tuple for each position, that contains its record from each vcf file.
