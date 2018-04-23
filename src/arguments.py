@@ -14,7 +14,7 @@ parser.add_argument("-r", "--region", default = False, help = "run on a specific
 parser.add_argument("-v", "--verbosity", action = 'store_true', help = "Prints more detailed debugging information")
 parser.add_argument("-w", "--window", default = 3, help = "Window size for lengths")
 parser.add_argument("-%", "--fetal_fraction", default = False, help = "specify a known fetal fraction to pass hoobari's calculation of it")
-parser.add_argument("-pl", "--use_prior_ff_dist", default = False, action = 'store_true', help = "whether to user a prior, known length ratios distribution")
+parser.add_argument("-P", "--use_prior_ff_dist", default = False, action = 'store_true', help = "whether to user a prior, known length ratios distribution")
 parser.add_argument("-l", "--plot_lengths", default = False, action = 'store_true', help = "Creates a plot of the length distributions")
 parser.add_argument("-q", "--qnames", default = False, action = 'store_true', help = "Creates lists of fetal and shared qnames")
 parser.add_argument("-d", "--db", default = os.path.join(tmp_dir, 'hoobari.db'), help = 'db path')
