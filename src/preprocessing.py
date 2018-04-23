@@ -246,7 +246,7 @@ def run_full_preprocessing(	db_path,
 
 	if calculate_empirical_ff_dist or calculate_fetal_fraction:
 		printerr('pre-processing', 'creating length distributions')
-		shared_lengths, fetal_lengths = create_length_distributions(db_path, cores, qnames, region)
+		shared_lengths, fetal_lengths = create_length_distributions(db_path, cores, db_prefix, qnames)
 		if plot:
 			printerr('pre-processing', 'saving length distributions plot as', fetal_sample + '.length_distributions.png')
 			generate_length_distributions_plot(shared_lengths, fetal_lengths, fetal_sample)
