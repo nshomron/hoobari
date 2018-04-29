@@ -81,7 +81,13 @@ def get_parental_samples_names(m_bam, p_bam):
 	return parents_sample_names
 
 def use_for_fetal_fraction_calculation(maternal_gt, paternal_gt, var_type, is_fetal):
+	
 	var_in_ff_positions = (maternal_gt == '0/0' and paternal_gt == '1/1') or (maternal_gt == '1/1' and paternal_gt == '0/0')
+	# TODO: add positions of mat_ref+pat_het to test
+	# mat_ref = (maternal_gt == '0/0' and paternal_gt in ('0/1', 1/1'))
+	# pat_ref = (maternal_gt == '1/1' and paternal_gt == '0/0')
+	# var_in_ff_positions = mat_ref or pat_ref
+
 	var_is_snp = var_type == 1
 
 	if var_in_ff_positions and var_is_snp:

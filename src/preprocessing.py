@@ -6,6 +6,7 @@ import vcf
 from collections import Counter
 from numpy import repeat as nprepeat
 import pandas as pd
+import numpy as np
 import matplotlib
 matplotlib.use('Agg') # to allow saving a figure even though display is invalid
 import matplotlib.pyplot as plt
@@ -29,6 +30,7 @@ def get_fetal_and_shared_lengths(db_path, qnames = False):
 	output - a tuple with two dictionaries, one contains the counts of fetal fragments at different lengths,
 	and the other is similar, but for fragments which aren't necessarily fetal ("shared")
 	'''
+	
 	con = db.Variants(db_path, probe=False)
 	fetal_lengths = con.getFetalLengths()
 	shared_lengths = con.getSharedLengths()
@@ -108,6 +110,29 @@ def create_length_distributions(db_path, cores, db_prefix = False, qnames = Fals
 		with open('fetal_qnames_list.txt', 'w') as f:
 			for q in fetal_qnames_set:
 				print(q, file = f)
+
+	# with pd.option_context('display.max_rows', None):
+	# pulled_lengths = shared_lengths.add(fetal_lengths, fill_value=0)
+	# pulled_lengths = pulled_lengths[pulled_lengths.index < 1001]
+	# pulled_lengths_densities = pulled_lengths / pulled_lengths.sum()
+	# printverbose('pulled_lengths_densities')
+	# lpulled = list(pulled_lengths_densities['COUNT(length)'])
+	# lpulled = list(pulled_lengths_densities['COUNT(length)'])
+	# printverbose(lpulled)
+
+	# zeros = pd.DataFrame(np.zeros((1001,1)))
+	
+	# printverbose('maternal lengths')
+	# maternal_lengths = shared_lengths - fetal_lengths
+	# maternal_lengths = maternal_lengths.add(zeros, fill_value=0)
+	# maternal_lengths = maternal_lengths.fillna(0).clip(lower = 0)
+	# maternal_lengths = maternal_lengths[maternal_lengths.index < 1001]
+	# printverbose(list(maternal_lengths['COUNT(length)']))
+
+	# printverbose('fetal lengths')
+	# fetal_lengths = fetal_lengths.add(zeros, fill_value=0)
+	# fetal_lengths = fetal_lengths[fetal_lengths.index < 1001]
+	# printverbose(list(fetal_lengths['COUNT(length)']))
 
 	return(shared_lengths, fetal_lengths)
 
