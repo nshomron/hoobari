@@ -6,3 +6,5 @@
 __pycache__/*
 test_files/*
 *.pyc
+*.pht
+*.tar.gz
