@@ -52,33 +52,48 @@ def calculate_priors(maternal_gt, paternal_gt):
 
 	return priors
 
-def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
-	'''
-	probabilities of each fragment i to show the reference allele, given one of the 3 possible fetal genotypes.
-	P(frag_i | fetal_genotype) = P(frag_i | frag from fetus)P(frag from fetus | fetal_genotype) + P(frag_i | frag from mother)P(frag from mother | fetal_genotype)
-	the first expression is the fetal quantity of the allele, and the second is the maternal quantity of the allele.
-	example: fetal fraction (ff is 0.1, fetus is aa, mother Aa. Therefore the fetus donates 0.1 fragments with genotype a, and half of the maternal fragments,
-	which is (1-0.1)/2 = 0.45, also donate genotype a => ff + (1-ff)*0.5 = 2ff*0.5 + (1-ff)*0.5 = 0.5(1 - ff + 2ff) = 0.5(1 + ff)
-	if fetus is aA - 0.5*ff + 0.5*(1-ff) = 0.5(ff+1-ff) = 0.5
-	if fetus is AA - 0*ff + 0.5(1-ff) = 0.5(1-ff)
-	'''
+def sqname(bam_rec):
+	return(bam_rec.query_name + ':' + str(int(not bam_rec.is_reverse)))
 
-	# 0 would cause -inf after log, and the sum would also be -inf
-	# TODO: change this when error will be added to the algorithm
 
-	# fetal genotypes: 0,1,2
-	# print(frag_genotype)
+def fetch_bam_records(bam_reader, chrom, position):
+	start_pos = max(0, int(position) - 1000)
+	chrom = 'chr' + str(chrom)
+	end_pos = min(bam_reader.lengths[bam_reader.references.index(chrom)], int(position) + 1000)
+	bam_records_at_position = bam_reader.fetch(chrom, start_pos, end_pos) # include a flanking region, since there's local realignment
+	rec_at_position_dic = {}
+	for rec in bam_records_at_position:
+		# rec_at_position_dic[sqname(rec)] = rec
+		if rec.query_name in rec_at_position_dic:
+			rec_at_position_dic[rec.query_name].append(rec)
+		else:
+			rec_at_position_dic[rec.query_name] = [rec]
+	# print(rec_at_position_dic)
+	return rec_at_position_dic
+
+def fetch_mate(bam_reader, bam_rec):
+	recs_at_mate_pos = bam_reader.fetch(	bam_rec.next_reference_name,
+						bam_rec.next_reference_start,
+						bam_rec.next_reference_start + 1)
+	for rec in recs_at_mate_pos:
+		if rec.query_name == bam_rec.query_name and rec.reference_start != bam_rec.reference_start:
+			return(rec)
+
+	return(None)
+	
+def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, p_fet, err_rate):
+
 	if frag_genotype == alt:
 		p_maternal_alt = max(err_rate, maternal_gt / 2)
-		frag_i_likelihoods = np.array([	0*f + p_maternal_alt*(1-f), # fetal is 0/0
-						0.5*f + p_maternal_alt*(1-f), # fetal is 0/1
-						1*f + p_maternal_alt*(1-f)]) # fetal is 1/1
+		frag_i_likelihoods = np.array([	0*p_fet + p_maternal_alt*(1-p_fet), # fetal is 0/0
+						0.5*p_fet + p_maternal_alt*(1-p_fet), # fetal is 0/1
+						1*p_fet + p_maternal_alt*(1-p_fet)]) # fetal is 1/1
 
 	elif frag_genotype == ref:
 		p_maternal_ref = max(err_rate, 1 - (maternal_gt / 2))
-		frag_i_likelihoods = np.array([	1*f + p_maternal_ref*(1-f), # fetal is 0/0
-						0.5*f + p_maternal_ref*(1-f), # fetal is 0/1
-						0*f + p_maternal_ref*(1-f)]) # fetal is 1/1
+		frag_i_likelihoods = np.array([	1*p_fet + p_maternal_ref*(1-p_fet), # fetal is 0/0
+						0.5*p_fet + p_maternal_ref*(1-p_fet), # fetal is 0/1
+						0*p_fet + p_maternal_ref*(1-p_fet)]) # fetal is 1/1
 
 	else:
 		frag_i_likelihoods = np.array([1, 1, 1])
@@ -87,12 +102,14 @@ def calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, f, err_rate):
 
 def calculate_likelihoods(
 	rec,
+	cfdna_bam_reader,
 	maternal_gt,
 	total_fetal_fraction,
 	fetal_fractions_df,
 	err_rate,
 	vardb,
 	model,
+	max_depth,
 	**kwargs):
 
 	'''
@@ -121,13 +138,18 @@ def calculate_likelihoods(
 			# get fetal fraction
 			if (model == 'origin') and (frag_is_fetal == 1):
 				printverbose('fragment was marked as fetal by another variant')
-				ff = 1 - err_rate
+				p_fetal = 1 - err_rate
 			elif (model in ('lengths', 'origin')) and (frag_length in fetal_fractions_df.index.values):
-				ff = fetal_fractions_df[frag_length]
+				p_fetal = fetal_fractions_df[frag_length]
 			else:
-				ff = total_fetal_fraction
+				p_fetal = total_fetal_fraction
 
-			frag_i_likelihoods = calculate_fragment_i(frag_genotype, maternal_gt, ref, alt, ff, err_rate)
+			frag_i_likelihoods = calculate_fragment_i(frag_genotype,
+								maternal_gt,
+								ref,
+								alt,
+								p_fetal,
+								err_rate)
 
 			#frag_i_likelihoods[frag_i_likelihoods == 0] = 0.003
 			frag_i_likelihoods = np.log(frag_i_likelihoods, dtype = np.float64)
@@ -135,7 +157,7 @@ def calculate_likelihoods(
 				sum_log_fragments_likelihoods_df = frag_i_likelihoods
 				first = 0
 			sum_log_fragments_likelihoods_df = np.add(sum_log_fragments_likelihoods_df, frag_i_likelihoods)
-			printverbose(ff, frag_i_likelihoods, sum_log_fragments_likelihoods_df, sep = '\t')
+			printverbose(p_fetal, frag_i_likelihoods, sum_log_fragments_likelihoods_df, sep = '\t')
 
 	else:
 		sum_log_fragments_likelihoods_df = np.log([1, 1, 1], dtype = np.float64)

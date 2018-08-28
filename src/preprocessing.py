@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from multiprocessing import Pool, cpu_count
 from functools import partial
-import re
 
 # project's
 import parse_gt
@@ -32,6 +31,7 @@ def get_fetal_and_shared_lengths(db_path, qnames = False):
 	'''
 	
 	con = db.Variants(db_path, probe=False)
+	
 	fetal_lengths = con.getFetalLengths()
 	shared_lengths = con.getSharedLengths()
 
@@ -42,7 +42,7 @@ def get_fetal_and_shared_lengths(db_path, qnames = False):
 		return (shared_lengths, fetal_lengths)
 
 
-def create_length_distributions(db_path, cores, db_prefix = False, qnames = False):
+def create_length_distributions(db_path, cores, qnames = False, region = False):
 	'''
 	input: db_path - path to the database from hoobari's patch; cores - number of cores to use for
 	multiprocessing; db_prefix - if hoobari's patch was ran for many different regions, it creates
@@ -63,14 +63,18 @@ def create_length_distributions(db_path, cores, db_prefix = False, qnames = Fals
 	# 		pool = Pool(1)
 	pool = Pool(int(cores))
 
-	# if db_prefix was given as an argument, work for all databases with that prefix.
 	db_path = os.path.abspath(db_path)
-	if db_prefix:
-		db_file_regex = re.compile(db_prefix + r'.*\.db')
-		db_files_loc = os.path.dirname(db_path)
-		db_files = [os.path.join(db_files_loc, file) for file in os.listdir(db_files_loc) if re.match(db_file_regex, file)]
-	else:
+	if os.path.isfile(db_path):
 		db_files = [db_path]
+	elif os.path.isdir(db_path):
+		if region:
+			db_files_loc = db_path
+			db_files = [os.path.join(db_files_loc, f) for f in os.listdir(db_files_loc) if f.endswith('.db')]
+		else:
+			sys.exit('If no database file is specified, a region must be specified using hoobari -r chrN:NNN-NNN')		
+	else:
+		sys.exit('Please specify a database file or the dir or  using hoobari -d LOCATION \
+			a region using hoobari -r chrN:NNN-NNN')
 
 	# run the function get_fetal_and_shared_lengths for each path in db_files
 	# pooled_results = pool.map(get_fetal_and_shared_lengths, db_files)
@@ -82,17 +86,22 @@ def create_length_distributions(db_path, cores, db_prefix = False, qnames = Fals
 	# create two lists, one with all the shared fragments results, and one for the fetal fragments results
 	
 	con = db.Variants(db_files[0], probe=False)
-	shared_lengths = con.getSharedLengths()
-	fetal_lengths = con.getFetalLengths()
+	try:
+		shared_lengths = con.getSharedLengths()
+		fetal_lengths = con.getFetalLengths()
+	except:
+		sys.exit(str(db_path))
+
 	if qnames:
-		fetal_qnames, shared_qnames = con.getFetalSharedQnames()
+		fetal_qnames_set, shared_qnames_set = con.getFetalSharedQnames()
 
 	for tup in pool.imap_unordered(get_qnames_and_alleles_with_args, db_files[1:]):
 		shared_lengths = shared_lengths.add(tup[0], fill_value=0)
 		fetal_lengths = fetal_lengths.add(tup[1], fill_value=0)
 		if qnames:
-			shared_qnames_set.update(tup[2])
 			fetal_qnames_set.update(tup[3])
+			shared_qnames_set.update(tup[2])
+			
 
 	# for db_path in db_files[1:]:
 	# 	con = db.Variants(db_path, probe=False)
@@ -257,11 +266,11 @@ def run_full_preprocessing(	db_path,
 				total_fetal_fraction,
 				use_prior_ff_dist,
 				cores,
-				db_prefix,
 				window = False,
 				max_len = 500,
 				plot = False,
-				qnames = False):
+				qnames = False,
+				region = False):
 
 	printerr('pre-processing', 'calculating error rate (a place holder is temporarily set to 0.003)')
 	err_rate = calculate_err_rate()
@@ -271,7 +280,7 @@ def run_full_preprocessing(	db_path,
 
 	if calculate_empirical_ff_dist or calculate_fetal_fraction:
 		printerr('pre-processing', 'creating length distributions')
-		shared_lengths, fetal_lengths = create_length_distributions(db_path, cores, db_prefix, qnames)
+		shared_lengths, fetal_lengths = create_length_distributions(db_path, cores, qnames, region)
 		if plot:
 			printerr('pre-processing', 'saving length distributions plot as', fetal_sample + '.length_distributions.png')
 			generate_length_distributions_plot(shared_lengths, fetal_lengths, fetal_sample)

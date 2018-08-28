@@ -29,7 +29,7 @@ class Variants(object):
                                 chromosome char(2) DEFAULT NULL,
                                 pos int(10) NOT NULL,
                                 genotype varchar(50) DEFAULT NULL,
-                                var_type tinyint(1) DEFAULT NULL,
+                                strand tinyint(1) DEFAULT NULL,
                                 length int(10) DEFAULT NULL,
                                 for_ff tinyint(1) DEFAULT NULL,
                                 is_fetal tinyint(1) DEFAULT NULL,
@@ -49,7 +49,7 @@ class Variants(object):
             chromosome,
             pos,
             genotype,
-            var_type,
+            strand,
             length,
             for_ff,
             is_fetal)
@@ -58,8 +58,9 @@ class Variants(object):
 
 
         for line in info_list:
-            query += '("{0}","{1}",{2},"{3}",{4},{5},{6},{7}),'.format(line[2],
-                    chromosome, position, line[0], line[4], line[1], line[5], line[3])
+            geno, isize, qname, strand, is_fetal, for_ff = line
+            query += '("{0}","{1}",{2},"{3}",{4},{5},{6},{7}),'.format(qname,
+                    chromosome, position, geno, strand, isize, for_ff, is_fetal)
 
         query = query[:-1]
         self.con.execute(query)
@@ -103,7 +104,9 @@ class Variants(object):
 
     # Gets fetal and shared qnames
     def getFetalSharedQnames(self):
-        return set(self.con.execute("SELECT DISTINCT(qname) FROM fetal_lengths")), set(self.con.execute("SELECT DISTINCT(qname) FROM shared_lengths"))
+        fetal_qnames = set([i[0] for i in self.con.execute("SELECT DISTINCT(qname) FROM fetal_lengths")])
+        shared_qnames = set([i[0] for i in self.con.execute("SELECT DISTINCT(qname) FROM shared_lengths")])
+        return fetal_qnames, shared_qnames
 
     # Gets all variants in specified chromosomal position
     def getPositionVariants(self, chromosome, position, model):

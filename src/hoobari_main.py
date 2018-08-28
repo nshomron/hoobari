@@ -11,6 +11,7 @@ import pandas as pd
 from collections import OrderedDict
 import pickle
 import time
+import pysam
 # project's
 import parse_gt
 from stderr import *
@@ -21,8 +22,20 @@ import preprocessing
 from arguments import args
 from db import Variants
 
+
+def split_region(regionstr):
+	region_split = re.split(':|-', regionstr)
+	chrom = region_split[0]
+	start = int(region_split[1]) if len(region_split) > 1 else None
+	end = int(region_split[2]) if len(region_split) > 2 else None
+	return(chrom, start, end)
+
 # connect to the database that was created during the first analysis of the cfDNA sample
-vardb = Variants(args.db, probe=False)
+if args.region:
+	args.db = args.tmp_dir
+	vardb = Variants(os.path.join(args.tmp_dir, str(args.region) + '.db'), probe=False)
+else:
+	vardb = Variants(args.db, probe=False)
 
 # pre-processing
 # calculate the total fetal fraction and a table of fetal-fraction per fragment size
@@ -32,20 +45,27 @@ err_rate, total_fetal_fraction, fetal_fractions_df = preprocessing.run_full_prep
 												float(args.fetal_fraction),
 												args.use_prior_ff_dist,
 												args.cores,
-												db_prefix = args.db_prefix,
 												window = args.window,
 												max_len = 500,
 												plot = args.plot_lengths,
-												qnames = args.qnames)
+												qnames = args.qnames,
+												region = args.region)
 
 # with open('preprocessing_info.txt', 'w') as pp_info:
 # 	print('total_fetal_fraction', total_fetal_fraction, file = pp_info)
 # 	print('err_rate', err_rate, file = pp_info)
 # 	fetal_fractions_df.to_csv(pp_info, sep = '\t')
 
+
+bam_file_reader = pysam.AlignmentFile(os.path.join(args.cfdna_bam), 'rb')
+
 # create vcf files iterators
-cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
-parents_reader = vcf.Reader(filename = args.parents_vcf)
+try:
+	cfdna_reader = vcf.Reader(filename = args.cfdna_vcf)
+	parents_reader = vcf.Reader(filename = args.parents_vcf)
+except:
+	sys.exit('warning! could not create iterator for the vcf. \
+	probably the input file does not contain any variants in the region.')
 
 # print header of output vcf file
 input_command = ' '.join(sys.argv)
@@ -58,10 +78,7 @@ vcf_out.make_header(	cfdna_reader,
 
 # fetch region, if a region was specified
 if args.region:
-	region_split = re.split(':|-', args.region)
-	chrom = region_split[0]
-	start = int(region_split[1]) if len(region_split) > 1 else None
-	end = int(region_split[2]) if len(region_split) > 2 else None
+	chrom, start, end = split_region(args.region)
 	try:
 		cfdna_reader = cfdna_reader.fetch(chrom, start, end)
 		parents_reader = parents_reader.fetch(chrom, start, end)
@@ -115,12 +132,14 @@ for tup in co_reader:
 				
 				# calculate likelihoods for the position
 				likelihoods = position.calculate_likelihoods(	cfdna_rec,
+										bam_file_reader,
 										maternal_gt,
 										total_fetal_fraction,
 										fetal_fractions_df,
 										err_rate,
 										vardb,
-										args.model)
+										args.model,
+										args.max_used_reads)
 
 				# calculate posteriors for the position
 				posteriors, prediction, qual = position.calculate_posteriors(priors, likelihoods)
@@ -155,3 +174,4 @@ for tup in co_reader:
 		# write var out (to file passed with -v or to output)
 		vcf_out.print_var(cfdna_rec, qual, rec_info, cfdna_geno_sample_dic, out_path = args.vcf_output)
 	
+printerr('completed successfully')
