@@ -95,7 +95,7 @@ def create_length_distributions(db_path, cores, qnames = False, region = False):
 	if qnames:
 		fetal_qnames_set, shared_qnames_set = con.getFetalSharedQnames()
 
-	for tup in pool.imap_unordered(get_qnames_and_alleles_with_args, db_files[1:]):
+	for tup in pool.imap_unordered(get_qnames_and_alleles_with_args, db_files[1:], 100):
 		shared_lengths = shared_lengths.add(tup[0], fill_value=0)
 		fetal_lengths = fetal_lengths.add(tup[1], fill_value=0)
 		if qnames:

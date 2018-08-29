@@ -11,7 +11,7 @@ class Variants(object):
             if os.path.isfile(dbpath):
                 self.con = sqlite3.connect(dbpath, isolation_level = None)
             else:
-                printerr('missing database file:', dbpath)   
+                printerr('missing database file:', dbpath)
         else:
             # create directory
             os.makedirs(os.path.dirname(dbpath), exist_ok=True)
