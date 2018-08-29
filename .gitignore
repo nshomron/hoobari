@@ -4,6 +4,7 @@
 *.so
 *.db
 __pycache__/*
+__pycache__
 test_files/*
 *.pyc
 *.pht
