@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ $# -lt 3 ];
+then
+    echo "based on freebayes-parallel script"
+    echo "usage: $0 [regions file] [ncpus] [hoobari] [hoobari arguments]"
+    echo
+    echo "Run hoobari in parallel over regions listed in regions file, using ncpus processors."
+    echo "Will merge and sort output, producing a uniform VCF stream on stdout.  Flags to hoobari"
+    echo "which would write to e.g. a particular file will obviously cause problms, so caution is"
+    echo "encouraged when using this script."
+    echo
+    echo "examples:"
+    echo
+    echo "Run freebayes in parallel on 100000bp chunks of the ref (fasta_generate_regions.py is "
+    echo "located in the scripts/ directory in the freebayes distribution).  Use 36 threads."
+    echo "To use parental or cfdna vcf files that are named per region, use {} to note the region."
+    echo
+    echo "    hoobari-parallel <(fasta_generate_regions.py ref.fa.fai 100000) hoobari 36 -cfdna_vcf CFDNA/{}.vcf.gz -parents_vcf parents_vcf/{}.vcf.gz -cfdna_bam cfdna.bam >out.vcf"
+    exit
+fi
+
+regionsfile=$1
+shift
+ncpus=$1
+shift
+
+scriptsdir=`dirname "$0"`
+command=("$@")
+
+(
+# iterate over regions using gnu parallel to dispatch jobs
+cat "$regionsfile" | parallel -k -j "$ncpus" "${command[@]}" --region {} 
+) | $scriptsdir/vcffirstheader \
+  | $scriptsdir/vcfstreamsort -w 1000 | $scriptsdir/vcfuniq # remove duplicates at region edges

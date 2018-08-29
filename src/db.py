@@ -1,18 +1,24 @@
 import sqlite3
 import os
 import pandas as pd
+from stderr import *
 
 class Variants(object):
     def __init__(self, dbpath = './hoobari.db', probe=True):
 
-        # create directory
-        os.makedirs(os.path.dirname(dbpath), exist_ok=True)
+        if not probe:
+            # Connect to DB only of it exists            
+            if os.path.isfile(dbpath):
+                self.con = sqlite3.connect(dbpath, isolation_level = None)
+            else:
+                printerr('missing database file:', dbpath)   
+        else:
+            # create directory
+            os.makedirs(os.path.dirname(dbpath), exist_ok=True)
 
-        # Connect to DB
-        self.con = sqlite3.connect(dbpath, isolation_level = None)
+            # create db by connecting it
+            self.con = sqlite3.connect(dbpath, isolation_level = None)
 
-        # Check table's existance
-        if probe:
             # Drop existing database if needed
             res_list = [i[0:2] for i in self.con.execute("SELECT type, name FROM sqlite_master WHERE type in ('table','view')").fetchall()]
             for res in res_list:
