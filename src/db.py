@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import pandas as pd
-from stderr import *
+from sys import stderr
 
 class Variants(object):
     def __init__(self, dbpath = './hoobari.db', probe=True):
@@ -11,7 +11,7 @@ class Variants(object):
             if os.path.isfile(dbpath):
                 self.con = sqlite3.connect(dbpath, isolation_level = None)
             else:
-                printerr('missing database file:', dbpath)
+                print('missing database file:', dbpath, file=stderr)
         else:
             # create directory
             os.makedirs(os.path.dirname(dbpath), exist_ok=True)
