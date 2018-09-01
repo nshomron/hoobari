@@ -156,7 +156,8 @@ def calculate_likelihoods(
 			if first:
 				sum_log_fragments_likelihoods_df = frag_i_likelihoods
 				first = 0
-			sum_log_fragments_likelihoods_df = np.add(sum_log_fragments_likelihoods_df, frag_i_likelihoods)
+			else:
+				sum_log_fragments_likelihoods_df = np.add(sum_log_fragments_likelihoods_df, frag_i_likelihoods)
 			printverbose(p_fetal, frag_i_likelihoods, sum_log_fragments_likelihoods_df, sep = '\t')
 
 	else:
