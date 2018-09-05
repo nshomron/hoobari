@@ -133,6 +133,7 @@ def calculate_likelihoods(
 
 		for frag_genotype, frag_length, frag_is_fetal in pos_data:
 
+			# if variant_len > 0: # deletion ####
 			frag_length = max(int(frag_length) - variant_len, 0)
 
 			# get fetal fraction
