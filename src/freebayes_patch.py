@@ -53,7 +53,8 @@ def get_parental_genotypes(parents_reader, parental_samples, chrom, position):
 		n_rec += 1
 		if n_rec > 1:
 			sys.exit('more than one parental variant in the same position')
-
+	if n_rec == 0:
+		maternal_gt, paternal_gt = None, None
 	return maternal_gt, paternal_gt
 
 def get_reads_tlen(bam_reader, chrom, position):
@@ -294,6 +295,8 @@ for line in sys.stdin:
 										parents_sample_names,
 										chrom,
 										position)
+			if maternal_gt is None and paternal_gt is None:
+				continue 
 			template_lengths_at_position_dic = get_reads_tlen(bam_reader, chrom, position)
 			position_list = []
 			initiate_var = False

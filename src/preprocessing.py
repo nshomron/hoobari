@@ -177,7 +177,7 @@ def create_fetal_fraction_per_length_df(shared_lengths, # pandas dataframe of sh
 					fetal_lengths, # pandas dataframe of fetal fragments length distribution
 					total_fetal_fraction, # the total calculated percent of fetal DNA within the cfDNA
 					err_rate, # TODO: will be later added to the model
-					window = False, # for the length distributions. for example: 10 will give
+					window, # for the length distributions. for example: 10 will give
 					max_len = 500):
 	'''
 	output:
@@ -194,11 +194,69 @@ def create_fetal_fraction_per_length_df(shared_lengths, # pandas dataframe of sh
 	'''
 	# TODO: rewrite a simpler version of this function
 
-
-	# define bins (aka categories)
-	bins = range(0, max_len, window)
-
 	# make lists from two length distribution dataframes
+
+
+	## New version - Modification 6/9/2018 - Yazeed
+	# # Change: define variable bins according to availability of values - more than 10 fragments available of both current fetal fraction length and shared fraction length, can define a bin.
+	# # if there is not enough fragments (under 10) add available frangments to the fragments for next length and check if above condition is satisfied. If not, add them to the next and so on.
+	# # if for current fragment length the fetal fractions were more than shared fractions and the conditions specified are not satisfied for "window" fragment, bin value would be: total_fetal_fraction.
+	# # In case of unsatisfied conditions at the end of the iteration, the bin would have the value of: total_fetal_fraction  
+
+	# fetal_fraction_per_length_df = pd.Series(index = range(0, max_len, 1))
+
+	# printverbose('fetal_lengths')
+	# printverbose(fetal_lengths)
+	# flCounts = list(np.zeros(max_len).astype(int))
+	# for i,c in fetal_lengths.iterrows():
+	# 	if int(i) == max_len:
+	# 		break
+	# 	flCounts[int(i)] = int(c)
+	# printverbose('\n\nflCounts')
+	# printverbose(flCounts)
+
+	# printverbose('shared_lengths')
+	# printverbose(fetal_lengths)
+	# slCounts = list(np.zeros(max_len).astype(int))
+	# for i,c in shared_lengths.iterrows():
+	# 	if int(i) == max_len:
+	# 		break
+	# 	slCounts[int(i)] = int(c)
+	# printverbose('\n\nslCounts')
+	# printverbose(slCounts)
+
+
+	# sl = 0
+	# fl = 0
+	# fill_back = []
+	# for i in range(len(fetal_fraction_per_length_df)):
+	# 	fl += float(flCounts[i])
+	# 	sl += float(slCounts[i])
+	# 	if fl > 10 and sl > 10 and sl > fl:			
+	# 			ff = (2 * fl) / (sl + fl)
+	# 			fetal_fraction_per_length_df[i] = ff
+	# 			if len(fill_back)>0:
+	# 				for j in fill_back:
+	# 					fetal_fraction_per_length_df[j] = ff
+	# 			sl = 0
+	# 			fl = 0
+	# 			fill_back = []
+	# 	else:
+	# 		fill_back.append(i)
+	# 		if fl >= sl and len(fill_back)>=window:
+	# 			for j in fill_back:
+	# 				fetal_fraction_per_length_df[j] = total_fetal_fraction
+	# 			sl = 0
+	# 			fl = 0
+	# 			fill_back = []
+	# 		if i == len(fetal_fraction_per_length_df)-1:
+	# 			if len(fill_back)>0:				
+	# 				for j in fill_back:
+	# 					fetal_fraction_per_length_df[j] = total_fetal_fraction
+
+
+	# Old version of this function
+
 	shared_lengths_list = []
 	for i,c in shared_lengths.iterrows():
 		for j in range(int(c)):
@@ -209,7 +267,11 @@ def create_fetal_fraction_per_length_df(shared_lengths, # pandas dataframe of sh
 		for j in range(int(c)):
 			fetal_lengths_list.append(int(i))
 
+	# define bins (aka categories)
+	bins = range(0, max_len, window)
+
 	# order the list using the bins - from a continuous variable to a categorical variable
+
 	shared_pd_cut = pd.cut(shared_lengths_list, bins, include_lowest = True)
 	fetal_pd_cut = pd.cut(fetal_lengths_list, bins, include_lowest = True)
 	printverbose('shared_pd_cut')
@@ -223,6 +285,9 @@ def create_fetal_fraction_per_length_df(shared_lengths, # pandas dataframe of sh
 	printverbose(fetal_binned)
 	printverbose('shared_binned')
 	printverbose(shared_binned)
+
+	printerr(total_fetal_fraction)
+
 
 	# for each bin, calculate its fetal fraction
 	# if the fetal fraction is above 1 use (1-err);
@@ -250,7 +315,6 @@ def create_fetal_fraction_per_length_df(shared_lengths, # pandas dataframe of sh
 				fetal_fraction_per_length_df[i] = fetal_fraction_per_length_df[i-1]
 			else:
 				fetal_fraction_per_length_df[i] = total_fetal_fraction
-
 
 
 	printverbose(fetal_fraction_per_length_df)
