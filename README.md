@@ -13,6 +13,12 @@
 
 One of *Hoobari*'s main goals is to create a general framework for the process of noninvasive fetal genotyping, that follows existing standards and is compatible with other bioinformatical tools. *Hoobari*'s workflow is therefore similar to that of other variant callers, and conveniently allows the introduction of future improvements. Hopefully, *Hoobari* will help make this field, which is still in its infancy, somewhat more accessible for other researchers.
 
+## Citing Hoobari
+
+If you are using the Hoobari in your research, please cite our paper as follows:
+
+Bayesian-based noninvasive prenatal diagnosis of single-gene disorders. Tom Rabinowitz, Avital Polsky, David Golan, Artem Danilevsky, Guy Shapira, Chen Raff, Lina Basel-Salmon, Reut Tomashov Matar, and Noam Shomron. Genome Research. 2019, doi:10.1101/gr.235796.118
+
 ## Obtaining
 
 To download Hoobari:
