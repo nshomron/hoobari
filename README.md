@@ -17,7 +17,7 @@ One of *Hoobari*'s main goals is to create a general framework for the process o
 
 If you are using the Hoobari in your research, please cite our paper as follows:
 
-Bayesian-based noninvasive prenatal diagnosis of single-gene disorders. Tom Rabinowitz, Avital Polsky, David Golan, Artem Danilevsky, Guy Shapira, Chen Raff, Lina Basel-Salmon, Reut Tomashov Matar, and Noam Shomron. Genome Research. 2019, doi:10.1101/gr.235796.118
+Bayesian-based noninvasive prenatal diagnosis of single-gene disorders. Tom Rabinowitz, Avital Polsky, David Golan, Artem Danilevsky, Guy Shapira, Chen Raff, Lina Basel-Salmon, Reut Tomashov Matar, and Noam Shomron. Genome Research. 2019, [doi:10.1101/gr.235796.118](https://genome.cshlp.org/content/early/2019/02/13/gr.235796.118.abstract)
 
 ## Obtaining
 
